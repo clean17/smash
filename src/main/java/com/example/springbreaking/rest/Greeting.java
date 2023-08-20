@@ -1,4 +1,4 @@
-package com.example.springbreaking.rest1;
+package com.example.springbreaking.rest;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

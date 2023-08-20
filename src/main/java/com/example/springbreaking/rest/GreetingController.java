@@ -1,4 +1,4 @@
-package com.example.springbreaking.rest1;
+package com.example.springbreaking.rest;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

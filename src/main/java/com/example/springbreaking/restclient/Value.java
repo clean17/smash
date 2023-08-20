@@ -1,4 +1,4 @@
-package com.example.springbreaking.rest2;
+package com.example.springbreaking.restclient;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;

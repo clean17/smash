@@ -1,6 +1,15 @@
+
+
+
+<details>
+  <summary>프로젝트 생성</summary>
+
 ## 프로젝트 생성
 https://start.spring.io/ `Generate` 버튼으로 zip 파일 받습니다.
 
+</details>
+<details>
+  <summary>스프링부트 기본형태</summary>
 
 ## 기본 형태
 ```java
@@ -11,6 +20,12 @@ https://start.spring.io/ `Generate` 버튼으로 zip 파일 받습니다.
 ```
 `http://localhost:8080/hello?name=merci` 으로 요청하면
 `Hello merci!` 로 응답
+
+<details>
+  <summary>@SpringBootApplication</summary>
+
+</details>
+
 
 ## @SpringBootApplication
 
@@ -28,13 +43,13 @@ public @interface SpringBootApplication { // ...
 `@SpringBootConfiguration`, `@EnableAutoConfiguration`, `@ComponentScan` 로 구성되어 있습니다.
 
 - `@SpringBootConfiguration`<br>
-스프링의 기본 설정 클래스를 구성하고 `@configuration`으로 설정된 `bean` 등록<br>
--> 스프링 MVC 및 IoC 컨테이너 등록
-<br>
+  스프링의 기본 설정 클래스를 구성하고 `@configuration`으로 설정된 `bean` 등록<br>
+  -> 스프링 MVC 및 IoC 컨테이너 등록
+  <br>
 
 
 - `@EnableAutoConfiguration`<br>
-자동 구성을 활성화 -> 클래스 패스(+`build.gradle`)에 기반하여 `bean` 등록<br> `spring.factories` 파일을 기반으로 스프링부트의 자동 구성 `bean` 등록<br>
+  자동 구성을 활성화 -> 클래스 패스(+`build.gradle`)에 기반하여 `bean` 등록<br> `spring.factories` 파일을 기반으로 스프링부트의 자동 구성 `bean` 등록<br>
 
   (`spring-context.xml`의 역할)
 
@@ -46,16 +61,26 @@ public @interface SpringBootApplication { // ...
 @SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
 ```
 
+</details>
+
+<details>
+  <summary>CRUDRepository / JPARepository 차이</summary>
+
 ### CRUDRepository / JPARepository 차이
 
 `CRUDRepository`는 Spring Data JPA 의 상위 인터페이스
 
 `JPARepository`는 위 인터페이스에 추가로 JPA메소드를 가지고 있습니다.
 
+</details>
+
+<details>
+  <summary>@JsonIgnoreProperties</summary>
+
 ## @JsonIgnoreProperties
 
 - `@JsonIgnoreProperties` 는 Jackson 라이브러리에서 제공하는 어노테이션으로 json에 있지만 java오브젝트에 매칭되는 변수명이 없을때 발생하는 에러를 무시해줍니다.<br>
-이러한 에러는 아래 설정을 통해서 발생시킬 수 있습니다.
+  이러한 에러는 아래 설정을 통해서 발생시킬 수 있습니다.
 ```java
 ObjectMapper mapper = new ObjectMapper();
 mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -70,6 +95,12 @@ public class Person {
     private int age;
 }
 ```
+
+
+</details>
+
+<details>
+  <summary>RestTemplate</summary>
 
 ## RestTemplate
 
@@ -146,6 +177,12 @@ MyResponseObject responseBody = response.getBody();
   String responseBody = responseEntity.getBody();
 ```
 
+
+</details>
+
+<details>
+  <summary>CommandLineRunner</summary>
+
 ## CommandLineRunner
 
 애플리케이션 시작 시 실행되어야 하는 코드를 정의합니다.
@@ -161,3 +198,167 @@ MyResponseObject responseBody = response.getBody();
 	}
 ```
 8080포트로 열려있는 서버에 요청을 보내 받은 응답을 `Quote`로 받고 로그를 출력합니다.
+
+</details>
+
+<details>
+  <summary>@EnableScheduling</summary>
+
+## @EnableScheduling
+
+`@EnableScheduling` 어노테이션을 Spring Configuration 클래스에 추가한다면
+`@Scheduled` 어노테이션이 붙은 메서드를 자동으로 찾아 주기적으로 실행합니다.
+
+```java
+@SpringBootApplication
+@EnableScheduling
+public class SpringbreakingApplication {
+
+  public static void main(String[] args) {
+    SpringApplication.run(SpringbreakingApplication.class, args);
+  }
+}
+```
+아래 메소드는 `bean`으로 등록된 클래스 내부에 있어야 합니다.
+```java
+	@Scheduled(fixedRate = 5000)
+	public void reportCurrentTime() {
+		log.info("The time is now {}", dateFormat.format(new Date()));
+	}
+```
+
+</details>
+
+<details>
+  <summary>Gradle 빌드</summary>
+
+## Gradle 
+
+java기반 프로젝트 관리 도구인 Maven의 장황한 설정을 보완하기 위해 나온 빌드 도구입니다.
+
+아래 커맨드로 gradle로 실행 가능한 작업 목록을 볼 수 있습니다.
+```java
+$ gradle tasks
+```
+
+```java
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Task :tasks
+
+------------------------------------------------------------
+Tasks runnable from root project 'springbreaking'
+------------------------------------------------------------
+
+Application tasks
+-----------------
+bootRun - Runs this project as a Spring Boot application.
+
+Build tasks
+-----------
+assemble - Assembles the outputs of this project.
+bootBuildImage - Builds an OCI image of the application using the output of the bootJar task
+bootJar - Assembles an executable jar archive containing the main classes and their dependencies.
+bootJarMainClassName - Resolves the name of the application's main class for the bootJar task.
+bootRunMainClassName - Resolves the name of the application's main class for the bootRun task.
+build - Assembles and tests this project.
+buildDependents - Assembles and tests this project and all projects that depend on it.
+buildNeeded - Assembles and tests this project and all projects it depends on.
+classes - Assembles main classes.
+clean - Deletes the build directory.
+jar - Assembles a jar archive containing the main classes.
+testClasses - Assembles test classes.
+
+Build Setup tasks
+-----------------
+init - Initializes a new Gradle build.
+wrapper - Generates Gradle wrapper files.
+
+Documentation tasks
+-------------------
+javadoc - Generates Javadoc API documentation for the main source code.
+Rules
+-----
+Pattern: clean<TaskName>: Cleans the output files of a task.
+Pattern: build<ConfigurationName>: Assembles the artifacts of a configuration.
+
+To see all tasks and more detail, run gradle tasks --all
+
+To see more detail about a task, run gradle help --task <task>
+
+BUILD SUCCESSFUL in 41s
+1 actionable task: 1 executed
+
+```
+
+## Gradle Wrapper
+
+gradle Wrapper 를 이용하면 gradle를 설치하지 않고 버전에 상관없이 일관된 빌드를 구성할 수 있습니다.
+
+gradle 프로젝트를 생성할 때 소스를 확인하면 gradle wrapper가 포함된 gradle 디렉토리가 있습니다.
+
+`gradle-wrapper.properties` 파일 내부
+```java
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.2.1-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+```
+wrapper를 이용할 때는 주로 아래 커맨드들을 이용합니다.
+```java
+$ ./gradlew run // java 애플리케이션 실행
+```
+```java
+$ ./gradlew bootRun // SpringBoot 애플리케이션 실행
+```
+
+```java
+$ ./gradlew bootJar // 실행 가능한 boot 기반 jar파일 생성
+```
+```java
+$ ./gradlew clean build // build 디렉토리를 삭제하고 빋르 ( 테스트 진행 )
+```
+</details>
+
+<details>
+  <summary>JDBCTemplate</summary>
+
+## JDBCTemplate
+
+- java의 JDBC 코드를 단순화하여 공통적인 문제를 처리하기 위해 사용합니다.<br>
+- JDBC를 사용할때 반복적으로 사용되는 연결, `PreparedStatement`, `ResultSet`같은 코드를 생략합니다.<br>
+- JDBC의 `SQLException`을 스프링의 `DataAccessException`로 변홥합니다.<br>
+- 리소스의 메모리를 자동으로 관리해주며 Batch를 처리할 수 있습니다.<br>
+
+
+
+`JDBCTemplate` 를 이용하기 위해서는 아래 의존성이 필요합니다.
+```java
+implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+```
+
+JPA 의존성은 `spring-boot-starter-data-jdbc` 의존성을 포함합니다.
+```java
+implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+```
+
+JDBCTemplate를 사용하기 위해서는 먼저 DataSource를 등록해야 합니다.
+```java
+private final JdbcTemplate jdbcTemplate;
+
+public JdbcTemplateItemRepository(DataSource dataSource) {
+	this.jdbcTemplate = new JdbcTemplate(dataSource);
+}
+```
+
+JPA의존성을 추가했다면 yml의 Datasource 설정을 바탕으로 자동 구성이 이루어집니다.
+(해당 드라이버 필요)
+
+JDBCTemplate의 메소드로는
+  INSERT, UPDATE, DETELTE, queryForObject, queryForInt, RowMapper, QUERY, EXECUTE, BATCH 같은 방법들이 있습니다.
+( 추후 자세히 알아보자 )
+
+</details>
