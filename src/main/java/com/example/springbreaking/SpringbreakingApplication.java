@@ -1,7 +1,9 @@
 package com.example.springbreaking;
 
+import com.example.springbreaking.uploadingfiles.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -61,4 +63,13 @@ public class SpringbreakingApplication {
 			log.info(quote.toString());
 		};
 	}*/
+
+	// 모든 데이터 리셋
+	@Bean
+	CommandLineRunner init(StorageService storageService) {
+		return (args) -> {
+			storageService.deleteAll();
+			storageService.init();
+		};
+	}
 }

@@ -362,3 +362,21 @@ JDBCTemplate의 메소드로는
 ( 추후 자세히 알아보자 )
 
 </details>
+
+<details>
+  <summary>파일 업로드</summary>
+
+## 파일 업로드
+
+
+
+</details>
+
+<details>
+  <summary>@ConfigurationProperties</summary>
+
+## @ConfigurationProperties
+
+스프링 부트에서 제공하는 어노테이션으로 외부 설정 파일의 ( `properties` or `yml` ) 속성을 java객체에 바인딩할 때 사용됩니다.
+
+</details>

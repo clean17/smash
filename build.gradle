@@ -32,6 +32,10 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     implementation 'org.slf4j:slf4j-api'
     testImplementation 'org.awaitility:awaitility:3.1.2'
+    
+    // 파일 업로드 html 뷰
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
 }
 
 tasks.named('test') {
