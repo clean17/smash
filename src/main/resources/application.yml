@@ -13,3 +13,6 @@ spring:
     multipart:
       max-file-size: 128KB # 최대 크기 제한
       max-request-size: 128KB # formData 요청 크기 제한
+
+storage:
+  location: D:\
