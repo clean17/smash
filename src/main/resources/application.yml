@@ -15,4 +15,4 @@ spring:
       max-request-size: 128KB # formData 요청 크기 제한
 
 storage:
-  location: D:\
+  location: D:\someDirectory

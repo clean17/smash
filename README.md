@@ -368,6 +368,16 @@ JDBCTemplate의 메소드로는
 
 ## 파일 업로드
 
+파일을 업로드 하기 위해서 최대 업로드 크기를 설정합니다.
+```yml
+spring:
+  servlet:
+    multipart:
+      max-file-size: 128KB # 최대 크기 제한
+      max-request-size: 128KB # formData 요청 크기 제한
+```
+
+
 
 
 </details>
@@ -379,4 +389,107 @@ JDBCTemplate의 메소드로는
 
 스프링 부트에서 제공하는 어노테이션으로 외부 설정 파일의 ( `properties` or `yml` ) 속성을 java객체에 바인딩할 때 사용됩니다.
 
+`(prefix = "app")`를 붙여서 특정 키워드로 시작하는 속성을 가져올 수도 있습니다.
+```java
+@ConfigurationProperties("storage") // (prefix = "storage")
+@Getter
+@Setter
+public class StorageProperties {
+
+	// 디폴트 값
+	private String location = "upload-dir";
+}
+```
+`properties` or `yml` 설정
+
+
+```yml
+storage:
+  location: D:\ // path
+```
+위 접두사 설정에 따라 연결됩니다.
+
+`@ConfigurationProperties`을 설정한 클래스의 필드를 가져오면 외부에서 설정한 속성을 java객체 내부로 가져올 수 있습니다.
+
+
 </details>
+
+<details>
+  <summary>@Value 차이 (Lombok / org.springframework.beans.factory.annotation.Value)</summary>
+
+## Lombok
+
+롬복에서 사용하는 `@value`어노테이션은 필드를 불변하게 만들때 사용합니다.<br>
+`private`, `final` 속성과 `Getter`, `equals()`, `hashCode()`, `toString()` 를 생성합니다.
+
+## org.springframework.beans.factory.annotation.Value
+스프링에서 제공하는 `@Value` 어노테이션은 외부 설정값을 가져올 때 사용합니다.
+예를들어 위에서 외부설정 값을
+```agsl
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Value {
+
+	/**
+	 * The actual value expression such as <code>#{systemProperties.myProp}</code>
+	 * or property placeholder such as <code>${my.app.myProp}</code>.
+	 */
+	String value();
+
+}
+```
+```agsl
+@Configuration
+public class StorageConfig {
+
+    @Value("${storage.location}")
+    private String storageLocation;
+    
+    @Bean
+    public Path storagePath() {
+        return Paths.get(storageLocation);
+    }
+}
+```
+</details>
+
+<details>
+  <summary>서비스 인터페이스와 구현클래스 분리</summary>
+
+## 서비스 인터페이스와 구현클래스 분리
+
+개발을 하다보면 참고할 예제나 공식문서 그리고 설계된 프로젝트를 보면 `bean`으로 등록될 서비스는 추상화된 서비스 인터페이스를 구현하고 있는 경우가 많습니다. <br>
+추상화된 서비스 인터페이스와 구현 클래스를 분리하는 이유는
+ - 가독성, 서비스에 어떤 메소드가 구현되어야 하는데 한눈에 보기 좋습니다.
+ - 추상화, 메소드를 추상화시켜 다양한 구현으로 필요에 따라 코드를 교체할 수 있습니다.
+ - 확장성, 마찬가지로 설계 방향에 따라 다른 구현 클래스를 만들어 적용시킬 수 있습니다.
+ - 협업성, 구현해야할 메소드를 정해두면 구현 클래스는 모든 메소드를 구현해야 합니다.
+```agsl
+public interface StorageService {
+
+	void init(); // 인터페이스의 모든 메소드는 public 속성을 가짐
+	// ... 다른 메소드들
+}
+```
+```agsl
+@Service
+@RequiredArgsConstructor
+public class FileSystemStorageServiceImpl implements StorageService {
+
+	private final Path rootLocation;
+
+	@Override
+	public void init() {
+		try {
+			Files.createDirectories(rootLocation);
+		}
+		catch (IOException e) {
+			throw new StorageException("Could not initialize storage", e);
+		}
+	}
+	// ... 구현된 메소드들
+}
+```
+</details>
+

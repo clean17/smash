@@ -7,7 +7,8 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 /**
- * 리소스와 경로를 다루는 인터페이스
+ * 리소스와 경로를 다루는 인터페이스 - 추상화를 위해 코드 블록은 적지 않는다.
+ * java에서 인터페이스의 메소드는 디폴트로 public속성을 가진다.
  */
 public interface StorageService {
 

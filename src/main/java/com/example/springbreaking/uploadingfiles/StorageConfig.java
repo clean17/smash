@@ -18,6 +18,7 @@ public class StorageConfig {
     @Value("${storage.location}")
     private String storageLocation;
 
+    // Path 객체를 반환하는 bean
     @Bean
     public Path storagePath() {
         return Paths.get(storageLocation);

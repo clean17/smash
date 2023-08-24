@@ -64,7 +64,11 @@ public class SpringbreakingApplication {
 		};
 	}*/
 
-	// 모든 데이터 리셋
+	/**
+	 * 데이터셋 초기화 - uploadingfiles 패키지
+	 * @param storageService
+	 * @return
+	 */
 	@Bean
 	CommandLineRunner init(StorageService storageService) {
 		return (args) -> {
