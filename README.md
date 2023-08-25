@@ -75,17 +75,33 @@ public @interface SpringBootApplication { // ...
 </details>
 
 <details>
-  <summary>@JsonIgnoreProperties</summary>
+  <summary>@JsonIgnoreProperties, @JsonProperty</summary>
 
 ## @JsonIgnoreProperties
 
 - `@JsonIgnoreProperties` 는 Jackson 라이브러리에서 제공하는 어노테이션으로 json에 있지만 java오브젝트에 매칭되는 변수명이 없을때 발생하는 에러를 무시해줍니다.<br>
-  이러한 에러는 아래 설정을 통해서 발생시킬 수 있습니다.
+- json 직렬화, 역직렬화 과정에서 데이터를 주고 싶지 않거나 받고 싶지 않을때 사용할 수 있습니다.
+```agsl
+@JsonIgnoreProperties({"password", "secretKey"})
+public class User {
+
+    private String username;
+    private String password;
+    private String email;
+    private String secretKey;
+
+}
+```
+일반적으로 여러 프레임워크는 json 역직렬화에서 없는 필드를 받을 경우 에러를 발생시키지 않습니다. <br>
+이러한 에러는 아래 설정을 통해서 발생시킬 수 있습니다. <br><br>
+`false`를 `true`로 변경하면 역직렬화시 json속성에 매칭되는 java필드가 없다면 에러가 발생합니다.
 ```java
 ObjectMapper mapper = new ObjectMapper();
 mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 ```
-- `@JsonProperty` 는 Jackson 라이브러리에서 제공하는 어노테이션으로 json과 자바오브젝트의 변수 이름이 매칭되지 않을때 매칭시켜 줍니다.
+## @JsonProperty
+
+`@JsonProperty`는 Jackson 라이브러리에서 제공하는 어노테이션으로 json과 자바오브젝트의 변수 이름이 매칭되지 않을때 매칭시켜 줍니다.
 ```java
 @Getter
 @Setter
@@ -156,7 +172,7 @@ ResponseEntity<MyResponseObject> response = restTemplate.exchange(
 MyResponseObject responseBody = response.getBody();
 
 ```
-또는 카카오에 요청할때 사용한 방법으로 Map을 이용해서 요청한다.
+또는 카카오에 요청할때 사용한 방법으로 Map을 이용해서 요청합니다.
 ```java
   HttpHeaders headers = new HttpHeaders();
   headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -377,8 +393,225 @@ spring:
       max-request-size: 128KB # formData 요청 크기 제한
 ```
 
+서비스를 정의 합니다.
+
+```java
+@Service
+@RequiredArgsConstructor
+public class FileSystemStorageServiceImpl implements StorageService {
+
+	private final Path rootLocation;
+
+	/**
+	 * 디렉토리가 없다면 생성한다.
+	 * 외부설정이 아래처럼 되어 있다면 'someDirectory'가 존재 하지 않을 경우 디렉토리를 생성
+	 *
+	 * storage:
+	 *   location: D:\someDirectory
+	 */
+	@Override
+	public void init() {
+		try {
+			Files.createDirectories(rootLocation);
+		}
+		catch (IOException e) {
+			throw new StorageException("Could not initialize storage", e);
+		}
+	}
 
 
+	/**
+	 * 리소스를 받아서 저장
+	 *
+	 * destinationFile에는 파일을 저장할 절대 경로를 초기화
+	 * getInputStream() 통해 입력 스트림을 얻은 뒤 저장할 경로에 저장
+	 * StandardCopyOption.REPLACE_EXISTING : 덮어쓰기
+	 * @param file
+	 */
+	@Override
+	public void store(MultipartFile file) {
+		try {
+			// 리소스가 전달되지 않았으면 익셉션
+			if (file.isEmpty()) {
+				throw new StorageException("Failed to store empty file.");
+			}
+
+			// 리소스를 저장할 절대 경로를 설정
+			Path destinationFile = this.rootLocation.resolve(
+							Paths.get(file.getOriginalFilename()))
+					.normalize().toAbsolutePath();
+
+			// 외부에 저장될 때 익셉션
+			if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
+				// This is a security check
+				throw new StorageException(
+						"Cannot store file outside current directory.");
+			}
+
+			// 스트림을 통해 리소스를 저장
+			try (InputStream inputStream = file.getInputStream()) {
+				Files.copy(inputStream, destinationFile,
+						StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
+		catch (IOException e) {
+			throw new StorageException("Failed to store file.", e);
+		}
+	}
+
+
+	/**
+	 * 디렉토리 내부의 파일과 디렉토리의 정보를 가져오기 위한 메소드
+	 * 지정 혹은 생성된 디렉토리의 모든 리소스의 Path를 스트림으로 반환
+	 *
+	 * Files.walk() : 재귀적 탐색, 두번째 인자는 탐색할 뎁스 지정
+	 * filter : 부모 디렉토리 경로를 제외
+	 * map : relativize 메소드로 상대경로를 반환
+	 * @return
+	 */
+	@Override
+	public Stream<Path> loadAll() {
+		try {
+			// 직계 자식만 탐색
+			return Files.walk(this.rootLocation, 1)
+					.filter(path -> !path.equals(this.rootLocation))
+					.map(this.rootLocation::relativize);
+		}
+		catch (IOException e) {
+			throw new StorageException("Failed to read stored files", e);
+		}
+
+	}
+
+	// 루트 디렉토리 + 파일 이름 -> Path 반환
+	@Override
+	public Path load(String filename) {
+		return rootLocation.resolve(filename);
+	}
+
+
+	/**
+	 * 리소스 가져오기
+	 * @param filename
+	 * @return
+	 */
+	@Override
+	public Resource loadAsResource(String filename) {
+		try {
+			// 가져온 Path를 통해 리소스를 반환 (다운로드)
+			Path file = load(filename);
+			Resource resource = new UrlResource(file.toUri());
+			if (resource.exists() || resource.isReadable()) {
+				return resource;
+			}
+			// 리소스를 찾지 못했을 때
+			else {
+				throw new StorageFileNotFoundException(
+						"Could not read file: " + filename);
+			}
+		}
+		// 경로가 잘못되었을 때
+		catch (MalformedURLException e) {
+			throw new StorageFileNotFoundException("Could not read file: " + filename, e);
+		}
+	}
+
+	/**
+	 * 생성한 디렉토리를 삭제 - CommandLineRunner에 의해 서버 실행 시 디레토리 리셋
+	 */
+	@Override
+	public void deleteAll() {
+		FileSystemUtils.deleteRecursively(rootLocation.toFile());
+	}
+
+}
+```
+
+컨트롤러를 정의합니다.
+```java
+@Controller
+@RequiredArgsConstructor
+public class FileUploadController {
+
+    // 추상화된 인터페이스를 의존 - 유연성
+    private final StorageService storageService;
+
+    /**
+     * Thymeleaf를 사용하면 String 반환을 src/main/resources/templates/ 내부의 html로 매핑
+     * 
+     * 디렉토리의 모든 파일을 가져와 모델에 전달
+     * MvcUriComponentsBuilder.fromMethodName()를 통해서 리소스를 다운받을 URL을 제공
+     *
+     * @param model
+     * @return
+     * @throws IOException
+     */
+    @GetMapping("/")
+    public String listUploadedFiles(Model model) throws IOException {
+        model.addAttribute("files", storageService.loadAll().map(
+                        path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                                "serveFile", path.getFileName().toString()).build().toUri().toString())
+                .collect(Collectors.toList()));
+        
+        return "uploadForm";
+    }
+
+
+    /**
+     * 뷰에서 제공받은 url을 받아서 리소스를 반환 (다운로드)
+     * 
+     * `.+` : 정규표현식으로 파일명에 `.`이 포함될 수 있음 -> ex) image.jpg     *
+     * Content-Disposition : 헤더를 통해 다운로드 가능하도록 함
+     * .body(file) : 리소스를 반환
+     *
+     * @param filename
+     * @return
+     */
+    @GetMapping("/files/{filename:.+}")
+    @ResponseBody
+    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+
+        // 리소스 가져오기
+        Resource file = storageService.loadAsResource(filename);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+    }
+
+    /**
+     * submit -> 파일을 저장
+     * addFlashAttribute : 리다이렉션 후 한번만 표시 - 새로고침하면 메세지는 사라짐 + listUploadedFiles에 의해서 파일 다운로드 URL 뷰에 생성
+     *
+     * @param file
+     * @param redirectAttributes
+     * @return
+     */
+    @PostMapping("/")
+    public String handleFileUpload(@RequestParam("file") MultipartFile file,
+                                   RedirectAttributes redirectAttributes) {
+
+        storageService.store(file);
+        redirectAttributes.addFlashAttribute("message",
+                "You successfully uploaded " + file.getOriginalFilename() + "!");
+
+        return "redirect:/";
+    }
+
+
+    /**
+     * ResponseEntity는 HttpEntity를 구현한 클래스로써 상태코드와 응답데이터를 반환한다.
+     * HttpEntity는 다양한 상태코드를 응답하지 못한다. ( 기본 200 )
+     * 응답에 따른 다양한 상태코드를 응답하기 위해서는 ResonseEntity를 사용해야 한다.
+     *
+     * @param exc
+     * @return
+     */
+    @ExceptionHandler(StorageFileNotFoundException.class)
+    public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
+        return ResponseEntity.notFound().build();
+    }
+
+}
+```
 
 </details>
 
