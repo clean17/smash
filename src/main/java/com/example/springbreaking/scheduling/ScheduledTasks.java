@@ -18,11 +18,9 @@ package com.example.springbreaking.scheduling;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 
 /**
@@ -39,8 +37,8 @@ public class ScheduledTasks {
 
     // 5초 마다 실행 - spring-boot-starter 에 포함된 어노테이션
     // @Scheduled(cron=". . ."). 와 같은 정교한 작업도 가능
-	@Scheduled(fixedRate = 5000)
+/*	@Scheduled(fixedRate = 5000)
 	public void reportCurrentTime() {
 		log.info("The time is now {}", dateFormat.format(new Date()));
-	}
+	}*/
 }

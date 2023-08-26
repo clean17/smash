@@ -51,7 +51,7 @@ public class FileUploadController {
     /**
      * 뷰에서 제공받은 url을 받아서 리소스를 반환 (다운로드)
      * 
-     * `.+` : 정규표현식으로 파일명에 `.`이 포함될 수 있음 -> ex) image.jpg     *
+     * `.+` : 정규표현식으로 파일명에 `.`이 포함될 수 있음 -> ex) image.jpg
      * Content-Disposition : 헤더를 통해 다운로드 가능하도록 함
      * .body(file) : 리소스를 반환
      *
@@ -67,6 +67,7 @@ public class FileUploadController {
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + file.getFilename() + "\"").body(file);
     }
+
 
     /**
      * submit -> 파일을 저장

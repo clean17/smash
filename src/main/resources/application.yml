@@ -8,6 +8,11 @@ spring:
     username: sa
     password:
 
+  ldap: # 스프링부트의 임베디드 LDAP서버 설정 - 내부 개발 목적
+    embedded:
+      ldif: classpath:test-server.ldif # 리소스 디렉토리
+      base-dn: dc=springframework,dc=org
+      port: 8389
 
   servlet:
     multipart:
