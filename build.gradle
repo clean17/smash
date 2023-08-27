@@ -38,13 +38,17 @@ dependencies {
     // 파일 업로드 html 뷰
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
-    // 시큐리티 + ldap
+/*    // 시큐리티 + ldap
     implementation 'org.springframework.boot:spring-boot-starter-security'
     // LDAP 기반 사용자 저장소는 주로 조직의 사용자 인증 및 권한 관리, 전화번호부 서비스, 이메일 시스템의 주소록 등 다양한 디렉터리 서비스에 사용
     // 여기서는 내부 서버의 로그인 데이터 저장용으로 사용되었음
     implementation 'org.springframework.ldap:spring-ldap-core'
     implementation 'org.springframework.security:spring-security-ldap'
-    implementation 'com.unboundid:unboundid-ldapsdk'
+    implementation 'com.unboundid:unboundid-ldapsdk'*/
+
+    // Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 
 }
 

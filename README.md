@@ -726,3 +726,83 @@ public class FileSystemStorageServiceImpl implements StorageService {
 ```
 </details>
 
+<details>
+  <summary> Redis Messaging </summary>
+
+## Redis Messaging
+
+먼저 Redis를 설치합니다.<br>
+Mac
+```
+$ brew install redis
+```
+Windows
+```
+$ choco install redis-64
+```
+하지만 내 경우 chocolatey로 제대로 설치가 되지 않음 그래서 공홈에서 다운받음<br>
+https://redis.io/docs/getting-started/
+
+설명을 보니까 `Redis는 Windows에서 공식적으로 지원되지 않습니다.`<br>
+우분투에 설치를 하라고 합니다.
+
+차례대로 입력합니다.
+```agsl
+$ sudo apt install lsb-release curl gpg
+```
+```agsl
+$ curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+
+$ echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+
+$ sudo apt-get update
+$ sudo apt-get install redis
+```
+설치가 완료되면 아래 커맨드로 Redis 서버를 실행합니다.
+```agsl
+$ sudo service redis-server start
+Starting redis-server: redis-server.
+```
+Redis CLI를 통해서 Redis가 실행중인지 확인할 수 있습니다.
+```agsl
+$ redis-cli 
+127.0.0.1:6379> ping
+PONG
+```
+스프링부트에서 Redis를 사용하기 위해서 의존성과 포트설정이 필요합니다.
+```agsl
+implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+```
+```
+spring:
+  redis:
+    host: localhost
+    port: 6379
+```
+
+모든 메세징 기반 서비스는 게시자와 수신자가 있습니다.
+- 메세지 수신기 설정
+```agsl
+@Slf4j
+public class Receiver {
+
+    /**
+     * Atomic - 원자적 - 스레드 안전, 동시 접근 불가
+     * 여러 스레드가 동시에 카운터 값을 증가 시킬 경우에 사용
+     */
+    private AtomicInteger counter = new AtomicInteger();
+
+    public void receiveMessage(String message) {
+        log.info("Received <" + message + ">");
+        counter.incrementAndGet();
+    }
+
+    public int getCount() {
+        return counter.get();
+    }
+}
+```
+
+- 리스너 등록 및 메세지 전송
+
+</details>
