@@ -731,6 +731,12 @@ public class FileSystemStorageServiceImpl implements StorageService {
 
 ## Redis Messaging
 
+Redis는 인메모리 데이터 구조 저장소로 키-값 형태로 데이터를 저장합니다.<br>
+주로 여러 인스턴스 서버들의 앞단에서 세션이나 캐시 메모리의 형태로 활용되는 편입니다.<br>
+Redis의 Pub/Sub 모델을 통해서 메시지 기능을 구현할 수 있습니다.<br>
+하지만 Redis는 인메모리의 특성으로 보낸 메세지를 저장하지 않습니다.
+
+### 메세지 보내기
 먼저 Redis를 설치합니다.<br>
 Mac
 ```
@@ -779,8 +785,10 @@ spring:
     host: localhost
     port: 6379
 ```
+ <br> <br> <br>
+이제 Redis를 통해 메세지를 송수신해보겠습니다. <br>
+모든 메세징 기반 서비스는 전송자와 수신자가 있습니다.
 
-모든 메세징 기반 서비스는 게시자와 수신자가 있습니다.
 - 메세지 수신기 설정
 ```agsl
 @Slf4j
@@ -803,6 +811,400 @@ public class Receiver {
 }
 ```
 
-- 리스너 등록 및 메세지 전송
+- 메세지 리스너 등록
+```agsl
+@Configuration
+public class MessagingRedisApplication {
+
+	/**
+	 * Redis 메세지 리스너 컨테이너
+	 * 'chat' 토픽의 메세지를 수신한다.
+	 * @param connectionFactory
+	 * @param listenerAdapter
+	 * @return
+	 */
+	@Bean
+	RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
+			MessageListenerAdapter listenerAdapter) {
+
+		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+		container.setConnectionFactory(connectionFactory);
+		container.addMessageListener(listenerAdapter, new PatternTopic("chat"));
+
+		return container;
+	}
+
+	/**
+	 * 메세지 리스너 어뎁터
+	 * Reciver객체의 'receiveMessage'메소드를 사용한다.
+	 * @param receiver
+	 * @return
+	 */
+	@Bean
+	MessageListenerAdapter listenerAdapter(Receiver receiver) {
+		return new MessageListenerAdapter(receiver, "receiveMessage");
+	}
+
+	/**
+	 * Redis 메시지 수신기
+	 * 메세지를 수신하고 카운트 증가 메소드가 있다.
+	 * @return 
+	 */
+	@Bean
+	Receiver receiver() {
+		return new Receiver();
+	}
+
+	/**
+	 * RedisConnectionFactory -> StringRedisTemplate 생성 및 반환
+	 * StringRedisTemplate : Redis와의 문자열 통신을 담당
+	 * @param connectionFactory
+	 * @return
+	 */
+	@Bean
+	StringRedisTemplate template(RedisConnectionFactory connectionFactory) {
+		return new StringRedisTemplate(connectionFactory);
+	}
+
+}
+```
+- 메세지 전송 테스트 ( 폴링 방식 )
+```agsl
+	public static void main(String[] args) throws InterruptedException {
+
+		// Redis 메세징, 진입점 클래스를 명시
+		ApplicationContext ctx = SpringApplication.run(SpringbreakingApplication.class, args);
+
+		StringRedisTemplate template = ctx.getBean(StringRedisTemplate.class);
+		Receiver receiver = ctx.getBean(Receiver.class);
+
+		/**
+		 * Poling 메세지 리시버 활성화
+		 * 'chat' 토픽으로 전송된 메시지일 경우에만 카운트 증가
+		 */
+		while (receiver.getCount() == 0) {
+
+			log.info("Sending message...");
+			template.convertAndSend("chat", "Hello from Redis!");
+			Thread.sleep(500L);
+		}
+
+		// 애플리케이션 강제 종료
+//		System.exit(0);
+	}
+```
+끝으로 레디스 서버를 종료하는 방법
+```agsl
+$ redis-cli shutdown
+```
+</details>
+
+<details>
+  <summary>RabbitMQ Messaging</summary>
+
+## RabbitMQ Messaging
+
+RabbitMQ는 주로 메세지 브로커의 용도로 개발되었으며 안전하게 소비자에게 전달하는것을 목적으로 합니다.<br>
+Redis는 단일 스레드 모델을 사용하지만 RabbitMQ는 다중 스레드 및 다중 노드 구성을 지원하여 확장성이 좋습니다.<br>
+큐를 이용해 메세지를 전송합니다.
+
+### 설치
+
+RabbitMQ를 설치하는 다양한 가이드는 공홈을 참고하면 됩니다. https://www.rabbitmq.com/download.html
+
+우분투일 경우 공홈에서는 Cloudsmith미러 저장소를 이용한 스크립트 설치를 권장하고 있습니다.
+```agsl
+#!/bin/sh
+
+sudo apt-get install curl gnupg apt-transport-https -y
+
+## Team RabbitMQ's main signing key
+curl -1sLf "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null
+## Community mirror of Cloudsmith: modern Erlang repository
+curl -1sLf https://ppa.novemberain.com/gpg.E495BB49CC4BBE5B.key | sudo gpg --dearmor | sudo tee /usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg > /dev/null
+## Community mirror of Cloudsmith: RabbitMQ repository
+curl -1sLf https://ppa.novemberain.com/gpg.9F4587F226208342.key | sudo gpg --dearmor | sudo tee /usr/share/keyrings/rabbitmq.9F4587F226208342.gpg > /dev/null
+
+## Add apt repositories maintained by Team RabbitMQ
+sudo tee /etc/apt/sources.list.d/rabbitmq.list <<EOF
+## Provides modern Erlang/OTP releases
+##
+deb [signed-by=/usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu jammy main
+deb-src [signed-by=/usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu jammy main
+
+# another mirror for redundancy
+deb [signed-by=/usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg] https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu jammy main
+deb-src [signed-by=/usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg] https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu jammy main
+
+## Provides RabbitMQ
+##
+deb [signed-by=/usr/share/keyrings/rabbitmq.9F4587F226208342.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-server/deb/ubuntu jammy main
+deb-src [signed-by=/usr/share/keyrings/rabbitmq.9F4587F226208342.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-server/deb/ubuntu jammy main
+
+# another mirror for redundancy
+deb [signed-by=/usr/share/keyrings/rabbitmq.9F4587F226208342.gpg] https://ppa2.novemberain.com/rabbitmq/rabbitmq-server/deb/ubuntu jammy main
+deb-src [signed-by=/usr/share/keyrings/rabbitmq.9F4587F226208342.gpg] https://ppa2.novemberain.com/rabbitmq/rabbitmq-server/deb/ubuntu jammy main
+EOF
+
+## Update package indices
+sudo apt-get update -y
+
+## Install Erlang packages
+sudo apt-get install -y erlang-base \
+                        erlang-asn1 erlang-crypto erlang-eldap erlang-ftp erlang-inets \
+                        erlang-mnesia erlang-os-mon erlang-parsetools erlang-public-key \
+                        erlang-runtime-tools erlang-snmp erlang-ssl \
+                        erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl
+
+## Install rabbitmq-server and its dependencies
+sudo apt-get install rabbitmq-server -y --fix-missing
+```
+
+해당 스크립트를 간단하게 만들고 나서 권한을 부여 후 실행합니다.
+```agsl
+$ touch RabbitMQ_install_by_Cloudsmith.sh
+
+$ chmod +x RabbitMQ_install_by_Cloudsmith.sh
+
+$ sh RabbitMQ_install_by_Cloudsmith.sh
+```
+그런 다음 RabbitMQ를 실행합니다.
+```agsl
+$ sudo rabbitmq-server start
+
+  ##  ##      RabbitMQ 3.12.4
+  ##  ##
+  ##########  Copyright (c) 2007-2023 VMware, Inc. or its affiliates.
+  ######  ##
+  ##########  Licensed under the MPL 2.0. Website: https://rabbitmq.com
+
+  Erlang:      26.0.2 [jit]
+  TLS Library: OpenSSL - OpenSSL 3.0.2 15 Mar 2022
+  Release series support status: supported
+
+  Doc guides:  https://rabbitmq.com/documentation.html
+  Support:     https://rabbitmq.com/contact.html
+  Tutorials:   https://rabbitmq.com/getstarted.html
+  Monitoring:  https://rabbitmq.com/monitoring.html
+
+  Logs: /var/log/rabbitmq/rabbit@DESKTOP-PJ1Q12M.log
+        <stdout>
+
+  Config file(s): (none)
+
+  Starting broker... completed with 0 plugins.
+```
+또한 중지하거나 상태를 확인할 수 있습니다.
+```agsl
+$ sudo rabbitmqctl stop
+
+$ sudo rabbitmqctl status
+
+OS PID: 3115
+OS: Linux
+Uptime (seconds): 78
+Is under maintenance?: false
+RabbitMQ version: 3.12.4
+RabbitMQ release series support status: supported
+Node name: rabbit@DESKTOP-PJ1Q12M
+Erlang configuration: Erlang/OTP 26 [erts-14.0.2] [source] [64-bit] [smp:12:12] [ds:12:12:10] [async-threads:1] [jit:ns]
+Crypto library: OpenSSL 3.0.2 15 Mar 2022
+Erlang processes: 297 used, 1048576 limit
+Scheduler run queue: 1
+Cluster heartbeat timeout (net_ticktime): 60
+
+Plugins
+
+Enabled plugin file: /etc/rabbitmq/enabled_plugins
+Enabled plugins:
+
+
+Data directory
+
+Node data directory: /var/lib/rabbitmq/mnesia/rabbit@DESKTOP-PJ1Q12M
+Raft data directory: /var/lib/rabbitmq/mnesia/rabbit@DESKTOP-PJ1Q12M/quorum/rabbit@DESKTOP-PJ1Q12M
+
+Config files
+
+
+Log file(s)
+
+ * /var/log/rabbitmq/rabbit@DESKTOP-PJ1Q12M.log
+ * <stdout>
+ 
+ (.... 생략) 
+ 
+Listeners
+
+Interface: [::], port: 25672, protocol: clustering, purpose: inter-node and CLI tool communication
+Interface: [::], port: 5672, protocol: amqp, purpose: AMQP 0-9-1 and AMQP 1.0
+```
+
+이렇게 실행시키긴 했는데 이 방법은 서버를 임의로 시작하거나 디버깅을 위한 용도입니다.
+
+공홈에서는 아래의 방법으로 서버를 실행시킵니다.
+```agsl
+$ systemctl start rabbitmq-server
+```
+하지만 `System has not been booted with systemd as init system (PID 1). Can't operate.` 에러가 나오는 경우가 발생합니다.
+
+이는 도커 또는 WSL환경에서 실행했을때 발생하는 에러로 `systemd`를 활성화 해야 합니다.
+
+먼저 powershell 에서 아래 커맨드를 입력합니다.
+```agsl
+$ wsl --update
+```
+그리고 아래 커맨드로 `systemd=true`를 확인합니다.
+```agsl
+$ cat /etc/wsl.conf
+
+[boot]
+systemd=true
+```
+추가로 부팅시 자동으로 실행하도록 하는 커맨드
+```agsl
+$ systemctl enable rabbitmq-server
+```
+
+### 메세지 보내기
+
+리시버 설정
+```java
+/**
+ * Receiver의 메세지 수신 방법을 정의하는 POJO
+ */
+@Component
+public class Receiver {
+
+  /**
+   * 동시성 유틸리티 클래스 - 다른 스레드의 작업 완료를 기다림
+   * 카운트가 0 이되면 await중인 스레드가 실행된다.
+   * 일회성으로 사용되며 재사용될 수 없다.
+   * 이러한 방법을 이용해 여러 스레드가 동시에 진행되도록 의도할 수 있다.
+   * 프로덕션에서는 사실상 쓰이지 않는다.
+   */
+  private CountDownLatch latch = new CountDownLatch(1);
+
+  public void receiveMessage(String message) {
+    System.out.println("Received <" + message + ">");
+    latch.countDown(); // 0 -> 실행
+  }
+
+  public CountDownLatch getLatch() {
+    return latch;
+  }
+
+}
+```
+
+수신기 설정
+
+```java
+@SpringBootApplication
+public class MessagingRabbitmqApplication {
+
+  static final String topicExchangeName = "spring-boot-exchange";
+
+  static final String queueName = "spring-boot";
+
+  /**
+   * 대기열 큐 생성
+   * durable: false -> 지속되지 않음
+   * @return
+   */
+  @Bean
+  Queue queue() {
+    return new Queue(queueName, false);
+  }
+
+  /**
+   * 토픽 체인지 생성 반환, 교환기의 이름은 spring-boot-exchange
+   * @return
+   */
+  @Bean
+  TopicExchange exchange() {
+    return new TopicExchange(topicExchangeName);
+  }
+
+  /**
+   * 큐와 교환기를 바인딩 -> foo.bar.# 로 시작하는 라우팅 키로 전송된 메세지를 큐에 라우팅
+   * @param queue
+   * @param exchange
+   * @return
+   */
+  @Bean
+  Binding binding(Queue queue, TopicExchange exchange) {
+    return BindingBuilder.bind(queue).to(exchange).with("foo.bar.#");
+  }
+
+  /**
+   * 메세지 리스너 컨테이너 생성 - 큐에서 메세지를 수신하고 처리
+   * @param connectionFactory
+   * @param listenerAdapter
+   * @return
+   */
+  @Bean
+  SimpleMessageListenerContainer container(ConnectionFactory connectionFactory,
+      MessageListenerAdapter listenerAdapter) {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    container.setConnectionFactory(connectionFactory);
+    container.setQueueNames(queueName);
+    container.setMessageListener(listenerAdapter);
+    return container;
+  }
+
+  /**
+   * 메세지 어댑터 - Receiver 객체를 사용하여 리스너 어댑터 생성
+   * Receiver가 실제 메세지 처리 로직을 포함
+   * @param receiver
+   * @return
+   */
+  @Bean
+  MessageListenerAdapter listenerAdapter(Receiver receiver) {
+    return new MessageListenerAdapter(receiver, "receiveMessage");
+  }
+
+  public static void main(String[] args) throws InterruptedException {
+    SpringApplication.run(MessagingRabbitmqApplication.class, args).close(); // close : RabbitMQ와 연결 종료
+  }
+
+}
+```
+
+동작 테스트
+```java
+/**
+ * CommandLineRunner를 구현하고 run 메소드를 재구성해서 원하는 기능을 구현한 형태
+ */
+@Component
+public class Runner implements CommandLineRunner {
+
+  private final RabbitTemplate rabbitTemplate;
+  private final Receiver receiver;
+
+  public Runner(Receiver receiver, RabbitTemplate rabbitTemplate) {
+    this.receiver = receiver;
+    this.rabbitTemplate = rabbitTemplate;
+  }
+
+  @Override
+  public void run(String... args) throws Exception {
+    System.out.println("Sending message...");
+
+    // 토픽 - 라우팅키를 지정
+    // foo.bar.baz 탬플릿을 사용하여 바인딩과 일치하는 라우팅키로 교환기로 메세지를 라우팅
+    rabbitTemplate.convertAndSend(MessagingRabbitmqApplication.topicExchangeName, "foo.bar.baz", "Hello from RabbitMQ!");
+    // 수신될 때까지 최대 10초 대기
+    receiver.getLatch().await(10000, TimeUnit.MILLISECONDS);
+  }
+
+}
+```
+
+실행 결과는
+```java
+Sending message...
+Received <Hello from RabbitMQ!>
+```
 
 </details>

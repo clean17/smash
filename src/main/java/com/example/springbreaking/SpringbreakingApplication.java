@@ -1,3 +1,4 @@
+/*
 package com.example.springbreaking;
 
 import com.example.springbreaking.messagingRedis.Receiver;
@@ -18,7 +19,8 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class SpringbreakingApplication {
 
-	/**
+	*/
+/**
 	 * slf4j 라이브러리와 함께 사용되는 코드 조각
 	 *
 	 * log.debug("Debug message");
@@ -27,7 +29,8 @@ public class SpringbreakingApplication {
 	 * log.error("Error message");
 	 *
 	 * 아래 코드로 생성하지 않는다면 Lombok의 @Slf4j 어노테이션으로 생성할 수 있다.
-	 */
+	 *//*
+
 
 //	private static final Logger log = LoggerFactory.getLogger(SpringbreakingApplication.class);
 
@@ -39,10 +42,12 @@ public class SpringbreakingApplication {
 		StringRedisTemplate template = ctx.getBean(StringRedisTemplate.class);
 		Receiver receiver = ctx.getBean(Receiver.class);
 
-		/**
+		*/
+/**
 		 * Poling 메세지 리시버 활성화
 		 * 'chat' 토픽으로 전송된 메시지일 경우에만 카운트 증가
-		 */
+		 *//*
+
 		while (receiver.getCount() == 0) {
 
 			log.info("Sending message...");
@@ -54,18 +59,21 @@ public class SpringbreakingApplication {
 //		System.exit(0);
 	}
 
-	/**
+	*/
+/**
 	 * Builder의 build 메소드를 호출해서 RestTemplate 반환
 	 *
 	 * @param builder
 	 * @return
-	 */
+	 *//*
+
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
 		return builder.build();
 	}
 
-	/**
+	*/
+/**
 	 * 애플리케이션 시작시 자동 호출
 	 *
 	 * Rest 클라이언트 - Rest서버에 응답을 보내고 응답을 받도록 함
@@ -77,7 +85,9 @@ public class SpringbreakingApplication {
 	 * @param restTemplate
 	 * @return
 	 * @throws Exception
-	 */
+	 *//*
+
+*/
 /*	@Bean
 	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
 		return args -> {
@@ -85,13 +95,16 @@ public class SpringbreakingApplication {
 					"http://localhost:8080/api/random", Quote.class);
 			log.info(quote.toString());
 		};
-	}*/
+	}*//*
 
-	/**
+
+	*/
+/**
 	 * 데이터셋 초기화 - uploadingfiles 패키지
 	 * @param storageService
 	 * @return
-	 */
+	 *//*
+
 	@Bean
 	CommandLineRunner init(StorageService storageService) {
 		return (args) -> {
@@ -101,3 +114,4 @@ public class SpringbreakingApplication {
 	}
 
 }
+*/

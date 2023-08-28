@@ -1,6 +1,5 @@
 package com.example.springbreaking.messagingRedis;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -13,7 +12,6 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
  * 리스너 등록 및 메세지 전송 테스트
  */
 @Configuration
-@Slf4j
 public class MessagingRedisApplication {
 
 	/**
