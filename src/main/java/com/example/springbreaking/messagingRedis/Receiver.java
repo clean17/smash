@@ -17,7 +17,6 @@ public class Receiver {
      */
     private AtomicInteger counter = new AtomicInteger();
 
-
     // MessageListenerAdapter가 이 메소드를 사용해서 메시지를 수신
     public void receiveMessage(String message) {
         log.info("Received <" + message + ">");

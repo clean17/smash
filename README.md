@@ -1208,3 +1208,104 @@ Received <Hello from RabbitMQ!>
 ```
 
 </details>
+
+<details>
+  <summary> Validation </summary>
+
+## Validation
+
+의존성을 먼저 추가합니다.
+```java
+implementation 'org.springframework.boot:spring-boot-starter-validation'
+```
+
+일반적으로 Java17 이상이라면 `jakarta.validation.constraints`<br>
+그 아래라면 `javax.validation.constraints` 를 import 해야합니다.
+
+`Valid`와  `Validated`의 차이는 Validated는 그룹 기능을 이용해서 validation 체크를 할 수 있습니다.
+
+일반적으로 validation 어노테이션을 필드에 붙이고 http요청의 메소드에 `@Valid` 어노테이션을 붙여서 검사합니다.
+
+간단한 구조는 아래와 같습니다.
+```java
+	/**
+	 * Valid 체크의 간단한 방법으로 BindingResult에 에러를 담는다.
+	 * 주로 AOP를 통해서 발생한 에러를 Advice로 처리할 수 있다.
+	 * @param personForm
+	 * @param bindingResult
+	 * @return
+	 */
+	@PostMapping("/")
+	public String checkPersonInfo(@Valid PersonForm personForm, BindingResult bindingResult) {
+
+		// 직접 메소드에서 에러를 처리할 경우
+		if (bindingResult.hasErrors()) {
+			return "form";
+		}
+
+		return "redirect:/results";
+	}
+```
+</details>
+
+<details>
+  <summary> WebMvcConfigurer </summary>
+
+## WebMvcConfigurer
+
+Spring MVC의 구성을 사용자 정의하기 위한 주요 방법 중 하나입니다.
+
+```java
+/**
+ * WebMvcConfigurer - SpringMVC 구성 설정
+ *
+ * addResourceHandlers - 정적 리소스 처리
+ * addViewControllers - url을 뷰에 매핑
+ * configurePathMatch  - 경로 매칭
+ * addCorsMappings - CORS 설정
+ * addInterceptors - 인터셉터 설정
+ * configureMessageConverters - 메세지 컨버터 설정
+ * configureViewResolvers - 뷰 리졸버 설정
+ * configureDefaultServletHandling - 기본 서블릿 설정
+ * getValidator - validator 설정
+ * addFormatters - 사용자 정의 fommatter 설정
+ *
+ */
+```
+
+보통 필수적으로 CORS 설정과 인터셉터 처리를 주로하는 편인것 같습니다.
+
+</details>
+
+<details>
+  <summary> 타임리프 에러처리 </summary>
+
+## 타임리프 에러처리
+
+`<td th:if="${#fields.hasErrors('name')}" >Name Error</td>` 이렇게 작성하면<br>
+유효성 검사를 통과하지 못하면 `Name Error`가 화면에 표시된다.<br>
+`<td th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name Error</td>`<br>
+위처럼 한다면 `validation` 에서 설정된 조건으로 통과하지 못한 유효성을 화면에 표시해준다.
+
+```java
+<form action="#" th:action="@{/}" th:object="${personForm}" method="post">
+    <table>
+        <tr>
+            <td>Name:</td>
+            <td><input type="text" th:field="*{name}" /></td>
+            <td th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name Error</td>
+        </tr>
+        <tr>
+            <td>Age:</td>
+            <td><input type="text" th:field="*{age}" /></td>
+            <td th:if="${#fields.hasErrors('age')}" th:errors="*{age}">Age Error</td>
+        </tr>
+        <tr>
+            <td><button type="submit">Submit</button></td>
+        </tr>
+    </table>
+</form>
+```
+![img.png](img.png)
+
+</details>

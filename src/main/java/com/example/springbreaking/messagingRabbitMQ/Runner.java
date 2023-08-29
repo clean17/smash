@@ -4,8 +4,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * CommandLineRunner를 구현하고 run 메소드를 재구성해서 원하는 기능을 구현한 형태
  */
@@ -24,11 +22,11 @@ public class Runner implements CommandLineRunner {
   public void run(String... args) throws Exception {
     System.out.println("Sending message...");
 
-    // 토픽 - 라우팅키를 지정
+/*    // 토픽 - 라우팅키를 지정
     // foo.bar.baz 탬플릿을 사용하여 바인딩과 일치하는 라우팅키로 교환기로 메세지를 라우팅
     rabbitTemplate.convertAndSend(MessagingRabbitmqApplication.topicExchangeName, "foo.bar.baz", "Hello from RabbitMQ!");
     // 수신될 때까지 최대 10초 대기
-    receiver.getLatch().await(10000, TimeUnit.MILLISECONDS);
+    receiver.getLatch().await(10000, TimeUnit.MILLISECONDS);*/
   }
 
 }

@@ -29,7 +29,7 @@ public class FileUploadController {
 
     /**
      * Thymeleaf를 사용하면 String 반환을 src/main/resources/templates/ 내부의 html로 매핑
-     * 
+     *
      * 디렉토리의 모든 파일을 가져와 모델에 전달
      * MvcUriComponentsBuilder.fromMethodName()를 통해서 리소스를 다운받을 URL을 제공
      *
@@ -37,20 +37,20 @@ public class FileUploadController {
      * @return
      * @throws IOException
      */
-    @GetMapping("/")
+/*    @GetMapping("/")
     public String listUploadedFiles(Model model) throws IOException {
         model.addAttribute("files", storageService.loadAll().map(
                         path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
                                 "serveFile", path.getFileName().toString()).build().toUri().toString())
                 .collect(Collectors.toList()));
-        
+
         return "uploadForm";
-    }
+    }*/
 
 
     /**
      * 뷰에서 제공받은 url을 받아서 리소스를 반환 (다운로드)
-     * 
+     *
      * `.+` : 정규표현식으로 파일명에 `.`이 포함될 수 있음 -> ex) image.jpg
      * Content-Disposition : 헤더를 통해 다운로드 가능하도록 함
      * .body(file) : 리소스를 반환
@@ -58,7 +58,7 @@ public class FileUploadController {
      * @param filename
      * @return
      */
-    @GetMapping("/files/{filename:.+}")
+/*    @GetMapping("/files/{filename:.+}")
     @ResponseBody
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
 
@@ -66,7 +66,7 @@ public class FileUploadController {
         Resource file = storageService.loadAsResource(filename);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + file.getFilename() + "\"").body(file);
-    }
+    }*/
 
 
     /**
@@ -77,7 +77,7 @@ public class FileUploadController {
      * @param redirectAttributes
      * @return
      */
-    @PostMapping("/")
+/*    @PostMapping("/")
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
                                    RedirectAttributes redirectAttributes) {
 
@@ -86,7 +86,7 @@ public class FileUploadController {
                 "You successfully uploaded " + file.getOriginalFilename() + "!");
 
         return "redirect:/";
-    }
+    }*/
 
 
     /**
@@ -97,9 +97,9 @@ public class FileUploadController {
      * @param exc
      * @return
      */
-    @ExceptionHandler(StorageFileNotFoundException.class)
+/*    @ExceptionHandler(StorageFileNotFoundException.class)
     public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
         return ResponseEntity.notFound().build();
-    }
+    }*/
 
 }
