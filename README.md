@@ -1309,3 +1309,75 @@ Spring MVC의 구성을 사용자 정의하기 위한 주요 방법 중 하나�
 ![img.png](img.png)
 
 </details>
+
+<details>
+  <summary> Spring Boot Actuator </summary>
+
+## Spring Boot Actuator
+
+Spring Boot Actuator는 애플리케이션의 운영 상태를 모니터링하고 관리하는데 도움을 주는 도구입니다.<br>
+
+터미널에서 아래와 같은 요처을 했을때 json을 응답하는 서버를 만들어 봅시다.
+```
+$ curl http://localhost:9000/hello-world
+```
+```
+{"id":1,"content":"Hello, World!"}
+```
+
+<br>
+
+먼저 actuator 의존성을 추가합니다.
+```java
+implementation 'org.springframework.boot:spring-boot-starter-actuator'
+```
+
+<br>
+
+이제 터미널에서 아래 커맨드를 요청하게 되면 actuator가 json을 응답합니다.
+```java
+$ curl localhost:9000
+```
+```java
+{"timestamp":"2023-08-30T13:48:05.432+00:00","status":404,"error":"Not Found","message":"No message available","path":"/"}
+```
+
+컨트롤러를 다음과 같이 구성하고 엔드포인트로 요청을 보내면
+```java
+@Controller
+public class HelloWorldController {
+
+	private static final String template = "Hello, %s!";
+	private final AtomicLong counter = new AtomicLong();
+
+	@GetMapping("/hello-world")
+	@ResponseBody
+	public Greeting sayHello(@RequestParam(name="name", required=false, defaultValue="Stranger") String name) {
+		return new Greeting(counter.incrementAndGet(), String.format(template, name));
+	}
+
+}
+```
+```java
+@Getter
+@AllArgsConstructor
+public class Greeting {
+
+	private final long id;
+	private final String content;
+}
+```
+RestController가 json을 응답하게 됩니다. <br>
+
+```java
+$ curl localhost:8080/hello-world
+
+        {"id":1,"content":"Hello, Stranger!"}
+```
+이때  `MappingJackson2HttpMessageConverter`가 자바 오브젝트를 json으로 변환시켜 줍니다. <br>
+그리고 http 요청 헤더가 `application/json` 일 경우에도 발동합니다. <br>
+이러한 컨버터는 `spring-boot-starter-web` 의존성에 포함되어 있습니다.
+
+actuator는 모니터링 기능을 제공할 뿐 사용하지 않더라도 애플리케이션의 응답은 달라지지 않습니다.<br>
+`/actuator` 와 관련된 엔드포인트일 경우 애플리케이션을 모니터링 할 수 있습니다.
+</details>
