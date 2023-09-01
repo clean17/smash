@@ -8,6 +8,7 @@
 https://start.spring.io/ `Generate` 버튼으로 zip 파일 받습니다.
 
 </details>
+
 <details>
   <summary>스프링부트 기본형태</summary>
 
@@ -21,10 +22,12 @@ https://start.spring.io/ `Generate` 버튼으로 zip 파일 받습니다.
 `http://localhost:8080/hello?name=merci` 으로 요청하면
 `Hello merci!` 로 응답
 
+</details>
+
 <details>
   <summary>@SpringBootApplication</summary>
 
-</details>
+
 
 
 ## @SpringBootApplication
@@ -1380,4 +1383,25 @@ $ curl localhost:8080/hello-world
 
 actuator는 모니터링 기능을 제공할 뿐 사용하지 않더라도 애플리케이션의 응답은 달라지지 않습니다.<br>
 `/actuator` 와 관련된 엔드포인트일 경우 애플리케이션을 모니터링 할 수 있습니다.
+</details>
+
+<details>
+  <summary> Spring Batch </summary>
+
+## Spring Batch
+
+스프링 배치는 대량의 데이터를 처리하기위한 배치 애플리케이션 개발 프레임워크입니다.
+
+스프링 배치의 특징은 다음과 같습니다.
+
+- 청크 기반 처리 : 스프링 배치는 데이터를 작은 단위 (chunk)로 처리합니다.<br>
+각 청크는 여러 레코드로 구성되며 청크 단위로 트랜잭션을 관리합니다.
+
+- 재시작 가능성 : 실패한 작업을 안전하게 시작할 수 있습니다. 
+- 확장성 : 다양환 환경에서 동작합니다. <br>
+여러 서버 또는 클러스터에서 병렬로 작업을 실행합니다.
+- I/O 기능 : 다양한 데이터 소스에 대한 I/O 를 지원합니다. 
+
+
+
 </details>
