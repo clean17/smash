@@ -1,19 +1,17 @@
 package com.example.springbreaking.batchProcessing;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
 
 /**
  * 일관 처리의 패러다임 : 데이터 수집 -> 파이프
+ *
  * Spring Batch의 ItemProcessor 인터페이스를 구현
  * Spring Batch는 개발자가 많은 코드를 작성하지 않도록 유틸리티 클래스를 제공
  *
  */
+@Slf4j
 public class PersonItemProcessor implements ItemProcessor<Person, Person> {
-
-  private static final Logger log = LoggerFactory.getLogger(PersonItemProcessor.class);
 
   @Override
   public Person process(final Person person) throws Exception {

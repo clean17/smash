@@ -1400,12 +1400,216 @@ actuator는 모니터링 기능을 제공할 뿐 사용하지 않더라도 애�
 - 재시작 가능성 : 실패한 작업을 안전하게 시작할 수 있습니다. 
 - 확장성 : 다양환 환경에서 동작합니다. <br>
 여러 서버 또는 클러스터에서 병렬로 작업을 실행합니다.
-- I/O 기능 : 다양한 데이터 소스에 대한 I/O 를 지원합니다. 
+- I/O 기능 : 다양한 데이터 소스에 대한 I/O 를 지원합니다.
 
-실행 결과
+## 배치 코드
+배치 작업을 만들어 보겠습니다.<br>
+`ItemProcessor` 인터페이스를 구현합니다.
+```java
+/**
+ * 일관 처리의 패러다임 : 데이터 수집 -> 파이프
+ * 
+ * Spring Batch의 ItemProcessor 인터페이스를 구현
+ * Spring Batch는 개발자가 많은 코드를 작성하지 않도록 유틸리티 클래스를 제공
+ *
+ */
+@Slf4j
+public class PersonItemProcessor implements ItemProcessor<Person, Person> {
+
+  @Override
+  public Person process(final Person person) throws Exception {
+    final String firstName = person.getFirstName().toUpperCase();
+    final String lastName = person.getLastName().toUpperCase();
+
+    final Person transformedPerson = new Person(firstName, lastName);
+
+    log.info("Converting (" + person + ") into (" + transformedPerson + ")");
+
+    return transformedPerson;
+  }
+
+}
+```
+
+애플리케이션 실행 시 자동으로 실행되도록 배치 관련 클래스를 빈으로 등록합니다.
+```java
+/**
+ * HSQLDB 메모리 DB 사용
+ *
+ * JobRepository : 배치 작업의 메타 데이터를 저장, 관리
+ * 상태관리, 이력관리, 배치진행기록, 동시성 제어
+ *
+ * EnableBatchProcessing : 스프링 배치와 관련된 설정
+ * - BatchConfigurer 인터페이스를 구현
+ * - JobRepository 빈 생성 - 메타데이터 관리
+ * - JobBuilderFactory, StepBuilderFactory 빈 생성
+ * - PlatformTransactionManager  빈 생성 - 트랜잭션 관리
+ * - 메타데이터 저장소 제공
+ */
+@Configuration
+@EnableBatchProcessing
+public class BatchConfiguration {
+
+  // EnableBatchProcessing 로 생성된 빈은 Autowired로 가져와야 함
+  @Autowired
+  private JobBuilderFactory jobBuilderFactory;
+
+  @Autowired
+  private StepBuilderFactory stepBuilderFactory;
+
+  /**
+   * 플랫 파일( csv )에서 데이터를 읽어 온다.
+   * @return
+   */
+  @Bean
+  public FlatFileItemReader<Person> reader() {
+    return new FlatFileItemReaderBuilder<Person>()
+            // 파일 리더의 이름
+            .name("personItemReader")
+            // 리소스 설정
+            .resource(new ClassPathResource("sample-data.csv"))
+            // 파일 데이터가 구분자로 구분되어 있음을 알려줌( 디폴트 = , )
+            .delimited()
+            // 파일의 각 라인의 이름을 설정
+            .names(new String[]{"firstName", "lastName"})
+            // 파일의 각 라인을 도메인 객체로 변환
+            // BeanWrapperFieldSetMapper : 데이터 소스의 필드를 Java객체로 매핑
+            .fieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {{
+              setTargetType(Person.class);
+            }})
+            .build();
+  }
+
+  /**
+   * 대문자로 처리하는 프로세서 등록
+   * @return
+   */
+  @Bean
+  public PersonItemProcessor processor() {
+    return new PersonItemProcessor();
+  }
+
+  /**
+   * DB 작업을 정의
+   *
+   * JdbcBatchItemWriter는 여러 아이템을 한번의 데이터베이스 연산으로 처리할 수 있다.
+   * SQL을 작성해야 한다.
+   * 각 아이템의 값을 SQL에 바인딩
+   * 데이터 소스를 설정해야 함
+   *
+   * @param dataSource
+   * @return
+   */
+  @Bean
+  public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
+    return new JdbcBatchItemWriterBuilder<Person>()
+            // 데이터 소스의 필드를 INSERT, :[속성] 명이 일치해야 함
+            .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+            .sql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)")
+            .dataSource(dataSource)
+            .build();
+  }
+
+
+  ///////////////////////////////////
+  /////// 배치의 작업 흐름을 구성 ///////
+  ///////////////////////////////////
+
+  /**
+   * 배치의 작업을 정의
+   *
+   * 콘솔 출력 -> Job: [FlowJob: [name=importUserJob]] launched with the following parameters: [{run.id=1}]
+   * @param listener
+   * @param step1
+   * @return
+   */
+  @Bean
+  public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
+    return jobBuilderFactory.get("importUserJob")
+            // 각 작업의 고유한 ID 증가 생성
+            .incrementer(new RunIdIncrementer())
+            // 리스너 ( 콜백 )
+            .listener(listener)
+            // 작업의 흐름을 설정
+            .flow(step1)
+            .end()
+            .build();
+  }
+
+  /**
+   * 배치의 단계를 정의
+   * @param transactionManager
+   * @param writer
+   * @return
+   */
+  @Bean
+  public Step step1(PlatformTransactionManager transactionManager, JdbcBatchItemWriter<Person> writer) {
+    return stepBuilderFactory.get("step1")
+            // 청크 처리 방식을 설정 -  10개의 아이템을 한번에 처리
+            .<Person, Person> chunk(10)
+            // 리더기 -> 파일을 읽고 Java객체로 변환
+            .reader(reader())
+            // 작업 프로세서 - Java객체의 필드를 대문자로 변환 
+            .processor(processor())
+            // JdbcBatchItemWriter - 데이터를 배치 방식으로 DB에 INSERT - Bean으로 등록 한거 가져옴
+            // 데이터 소스를 가져와 DB 작업(INSERT)
+            .writer(writer)
+            // 트랜잭션
+            .transactionManager(transactionManager)
+            .build();
+  }
+
+}
+```
+애플리케이션이 실행되면 등록된 `Job` 이 실행됩니다.<br>
+`Job`은 배치 처리의 실행 단위로 여러개의 `Step` 으로 구성됩니다.
+
+`Step` 내부에서 등록된 다른 Bean들을 가져와서 배치 작업을 구성합니다.<br>
+`csv`파일을 가져와 Java객체를 만들고 속성을 대문자로 만드는 프로세서를 통해 변환된 Java객체를 데이터 소스로 가져와<br>
+메모리 DB에 INSERT 하는 작업을 10개의 chunk 단위로 진행합니다.
+
+`Job` 에 등록된 리스너를 통해 작업 완료 시 실행될 작업을 등록합니다.
+```java
+/**
+ * 완료된 작업의 알림을 받음
+ *
+ * JobExecution: 배치 작업이 실행될 때 마다 인스턴스 생성
+ * - 상태 정보 유지 - STARTING, STARTED, STOPPING, STOPPED, FAILED, COMPLETED, ABANDONED
+ * - 실행 메타 데이터, 스텝 실행 정보, 예외 정보, 외부 컨텍스트 정보, 연결된 배치 작업등을 저장함
+ */
+@Component
+@Slf4j
+public class JobCompletionNotificationListener implements JobExecutionListener {
+
+  private final JdbcTemplate jdbcTemplate;
+
+  public JobCompletionNotificationListener(JdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = jdbcTemplate;
+  }
+
+  @Override
+  public void beforeJob(JobExecution jobExecution) {
+    log.info("!!! JOB START !!!");
+  }
+
+  @Override
+  public void afterJob(JobExecution jobExecution) {
+    if(jobExecution.getStatus() == BatchStatus.COMPLETED) { // 상태 - COMPLETED, STARTING, STARTED, STOPPING, STOPPED, FAILED, ABANDONED, UNKNOWN
+      log.info("!!! JOB FINISHED! Time to verify the results");
+
+      jdbcTemplate.query("SELECT first_name, last_name FROM people",
+              (rs, row) -> new Person( // rs : ResultSet
+                      // 각 결과 row 마다 SELECT 쿼리의 프로젝션 순서를 지정하여 Person 객체 생성
+                      rs.getString(1),
+                      rs.getString(2))
+      ).forEach(person -> log.info("Found <{{}}> in the database.", person));
+    }
+  }
+}
+```
+실행 결과 콘솔에 아래와 같이 보여지게 됩니다.
 
 ```java
-2023-09-02 23:46:51.900  INFO 23120 --- [  restartedMain] o.s.b.a.b.JobLauncherApplicationRunner   : Running default command line with: []
 2023-09-02 23:46:51.956  INFO 23120 --- [  restartedMain] o.s.b.c.l.support.SimpleJobLauncher      : Job: [FlowJob: [name=importUserJob]] launched with the following parameters: [{run.id=1}]
 2023-09-02 23:46:51.972  INFO 23120 --- [  restartedMain] o.s.batch.core.job.SimpleStepHandler     : Executing step: [step1]
 2023-09-02 23:46:51.992  INFO 23120 --- [  restartedMain] c.e.s.b.PersonItemProcessor              : Converting (firstName: Jill, lastName: Doe) into (firstName: JILL, lastName: DOE)

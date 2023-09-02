@@ -104,6 +104,8 @@ public class BatchConfiguration {
 
     /**
      * 배치의 작업을 정의
+     *
+     * 콘솔 출력 -> Job: [FlowJob: [name=importUserJob]] launched with the following parameters: [{run.id=1}]
      * @param listener
      * @param step1
      * @return
@@ -132,11 +134,12 @@ public class BatchConfiguration {
         return stepBuilderFactory.get("step1")
                 // 청크 처리 방식을 설정 -  10개의 아이템을 한번에 처리
                 .<Person, Person> chunk(10)
-                // 리더기
+                // 리더기 -> 파일을 읽고 Java객체로 변환
                 .reader(reader())
-                // 작업 프로세서
+                // 작업 프로세서 - Java객체의 필드를 대문자로 변환
                 .processor(processor())
                 // JdbcBatchItemWriter - 데이터를 배치 방식으로 DB에 INSERT - Bean으로 등록 한거 가져옴
+                // 데이터 소스를 가져와 DB 작업(INSERT)
                 .writer(writer)
                 // 트랜잭션
                 .transactionManager(transactionManager)
