@@ -1402,6 +1402,26 @@ actuator는 모니터링 기능을 제공할 뿐 사용하지 않더라도 애�
 여러 서버 또는 클러스터에서 병렬로 작업을 실행합니다.
 - I/O 기능 : 다양한 데이터 소스에 대한 I/O 를 지원합니다. 
 
+실행 결과
 
+```java
+2023-09-02 23:46:51.900  INFO 23120 --- [  restartedMain] o.s.b.a.b.JobLauncherApplicationRunner   : Running default command line with: []
+2023-09-02 23:46:51.956  INFO 23120 --- [  restartedMain] o.s.b.c.l.support.SimpleJobLauncher      : Job: [FlowJob: [name=importUserJob]] launched with the following parameters: [{run.id=1}]
+2023-09-02 23:46:51.972  INFO 23120 --- [  restartedMain] o.s.batch.core.job.SimpleStepHandler     : Executing step: [step1]
+2023-09-02 23:46:51.992  INFO 23120 --- [  restartedMain] c.e.s.b.PersonItemProcessor              : Converting (firstName: Jill, lastName: Doe) into (firstName: JILL, lastName: DOE)
+2023-09-02 23:46:51.992  INFO 23120 --- [  restartedMain] c.e.s.b.PersonItemProcessor              : Converting (firstName: Joe, lastName: Doe) into (firstName: JOE, lastName: DOE)
+2023-09-02 23:46:51.992  INFO 23120 --- [  restartedMain] c.e.s.b.PersonItemProcessor              : Converting (firstName: Justin, lastName: Doe) into (firstName: JUSTIN, lastName: DOE)
+2023-09-02 23:46:51.992  INFO 23120 --- [  restartedMain] c.e.s.b.PersonItemProcessor              : Converting (firstName: Jane, lastName: Doe) into (firstName: JANE, lastName: DOE)
+2023-09-02 23:46:51.992  INFO 23120 --- [  restartedMain] c.e.s.b.PersonItemProcessor              : Converting (firstName: John, lastName: Doe) into (firstName: JOHN, lastName: DOE)
+2023-09-02 23:46:51.996  INFO 23120 --- [  restartedMain] o.s.batch.core.step.AbstractStep         : Step: [step1] executed in 23ms
+2023-09-02 23:46:51.998  INFO 23120 --- [  restartedMain] .e.s.b.JobCompletionNotificationListener : !!! JOB FINISHED! Time to verify the results
+2023-09-02 23:46:51.999  INFO 23120 --- [  restartedMain] .e.s.b.JobCompletionNotificationListener : Found <{firstName: JILL, lastName: DOE}> in the database.
+2023-09-02 23:46:51.999  INFO 23120 --- [  restartedMain] .e.s.b.JobCompletionNotificationListener : Found <{firstName: JOE, lastName: DOE}> in the database.
+2023-09-02 23:46:51.999  INFO 23120 --- [  restartedMain] .e.s.b.JobCompletionNotificationListener : Found <{firstName: JUSTIN, lastName: DOE}> in the database.
+2023-09-02 23:46:51.999  INFO 23120 --- [  restartedMain] .e.s.b.JobCompletionNotificationListener : Found <{firstName: JANE, lastName: DOE}> in the database.
+2023-09-02 23:46:51.999  INFO 23120 --- [  restartedMain] .e.s.b.JobCompletionNotificationListener : Found <{firstName: JOHN, lastName: DOE}> in the database.
+2023-09-02 23:46:52.000  INFO 23120 --- [  restartedMain] o.s.b.c.l.support.SimpleJobLauncher      : Job: [FlowJob: [name=importUserJob]] completed with the following parameters: [{run.id=1}] and the following status: [COMPLETED] in 31ms
+2023-09-02 23:46:52.179  INFO 23120 --- [  restartedMain] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+```
 
 </details>

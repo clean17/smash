@@ -11,11 +11,11 @@ server:
 
 
 spring:
-  datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+#  datasource:
+#    url: jdbc:h2:mem:testdb
+#    driver-class-name: org.h2.Driver
+#    username: sa
+#    password:
 
   ldap: # 스프링부트의 임베디드 LDAP서버 설정 - 내부 개발 목적
     embedded:
@@ -35,7 +35,7 @@ spring:
   artemis:
     mode: embedded
 
-storage:
-  location: D:\someDirectory
+#storage:
+#  location: D:\someDirectory
 
 

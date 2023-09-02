@@ -4,10 +4,8 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
@@ -23,12 +21,28 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 
 /**
- * 메모리 DB 사용
+ * HSQLDB 메모리 DB 사용
+ *
+ * JobRepository : 배치 작업의 메타 데이터를 저장, 관리
+ * 상태관리, 이력관리, 배치진행기록, 동시성 제어
+ *
+ * EnableBatchProcessing : 스프링 배치와 관련된 설정
+ * - BatchConfigurer 인터페이스를 구현
+ * - JobRepository 빈 생성 - 메타데이터 관리
+ * - JobBuilderFactory, StepBuilderFactory 빈 생성
+ * - PlatformTransactionManager  빈 생성 - 트랜잭션 관리
+ * - 메타데이터 저장소 제공
  */
 @Configuration
 @EnableBatchProcessing
 public class BatchConfiguration {
 
+    // EnableBatchProcessing 로 생성된 빈은 Autowired로 가져와야 함
+    @Autowired
+    private JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    private StepBuilderFactory stepBuilderFactory;
 
     /**
      * 플랫 파일( csv )에서 데이터를 읽어 온다.
@@ -90,15 +104,13 @@ public class BatchConfiguration {
 
     /**
      * 배치의 작업을 정의
-     * @param jobRepository
      * @param listener
      * @param step1
      * @return
      */
     @Bean
-    public Job importUserJob(JobRepository jobRepository,
-                             JobCompletionNotificationListener listener, Step step1) {
-        return new JobBuilder("importUserJob", jobRepository)
+    public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
+        return jobBuilderFactory.get("importUserJob")
                 // 각 작업의 고유한 ID 증가 생성
                 .incrementer(new RunIdIncrementer())
                 // 리스너 ( 콜백 )
@@ -111,23 +123,24 @@ public class BatchConfiguration {
 
     /**
      * 배치의 단계를 정의
-     * @param jobRepository
      * @param transactionManager
      * @param writer
      * @return
      */
     @Bean
-    public Step step1(JobRepository jobRepository,
-                      PlatformTransactionManager transactionManager, JdbcBatchItemWriter<Person> writer) {
-        return new StepBuilder("step1", jobRepository)
-                // 청크 처리 방식을 설정 -  10개의 아이템을 한번에 처리 ( 트랜잭션 )
-                .<Person, Person> chunk(10, transactionManager)
+    public Step step1(PlatformTransactionManager transactionManager, JdbcBatchItemWriter<Person> writer) {
+        return stepBuilderFactory.get("step1")
+                // 청크 처리 방식을 설정 -  10개의 아이템을 한번에 처리
+                .<Person, Person> chunk(10)
                 // 리더기
                 .reader(reader())
                 // 작업 프로세서
                 .processor(processor())
                 // JdbcBatchItemWriter - 데이터를 배치 방식으로 DB에 INSERT - Bean으로 등록 한거 가져옴
                 .writer(writer)
+                // 트랜잭션
+                .transactionManager(transactionManager)
                 .build();
     }
+
 }

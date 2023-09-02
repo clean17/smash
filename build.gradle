@@ -28,7 +28,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    runtimeOnly 'com.h2database:h2'
+//    runtimeOnly 'com.h2database:h2'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.slf4j:slf4j-api'
 
@@ -60,7 +60,7 @@ dependencies {
 
     // spring batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
-    runtimeOnly 'org.hsqldb:hsqldb'
+    runtimeOnly 'org.hsqldb:hsqldb' // H2DB 는 주석처리 필요
 
 }
 
