@@ -1629,3 +1629,156 @@ public class JobCompletionNotificationListener implements JobExecutionListener {
 ```
 
 </details>
+
+<details>
+  <summary> WebSecurityConfig </summary>
+
+## WebSecurityConfig
+
+Spring Security 프레임워크에서 사용자의 보안설정을 사용자 정의하는 역할은 합니다.
+
+간단하게 구현한다면 아래처럼 구현합니다.
+```java
+/**
+ * 인증, 권한부여, 인코딩, CORS, CSRF, 세션 관리, 로그인 페이지 설정 등..
+ * configuration 포함
+ * 시큐리티 필터체인 등록
+ */
+@EnableWebSecurity
+public class WebSecurityConfig {
+
+	/**
+	 * 필터 체인 등록, 기본적인 형태
+	 * @param http
+	 * @return
+	 * @throws Exception
+	 */
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http
+			.authorizeHttpRequests((requests) -> requests
+				.antMatchers("/", "/home").permitAll()
+				.anyRequest().authenticated()
+			)
+			.formLogin((form) -> form
+				.loginPage("/login")
+				.permitAll()
+			)
+			.logout((logout) -> logout.permitAll());
+
+		return http.build();
+	}
+
+	/**
+	 * 1. 입력된 정보의 사용자 정보를 로드
+	 * 2. 인증 프로세서 AuthenticationManager는 UserDetailsService를 사용하여 사용자의 세부 정보를 가져온다.
+	 * 3. 사용자의 세부 정보 반환 : UserDetails 객체 (username, password, granted authorities)
+	 * 4. 확장 (Override) 가능
+	 *
+	 * 인터페이스를 구현한 클래스에서
+	 *
+	 *     @Override
+	 *     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+	 *         // 데이터베이스에서 사용자 정보 가져오기
+	 *         User user = userRepository.findByUsername(username);
+	 *
+	 *         if (user == null) {
+	 *             throw new UsernameNotFoundException("User not found");
+	 *         }
+	 *
+	 *         // UserDetails 객체 반환
+	 *         return new org.springframework.security.core.userdetails.User(
+	 *             user.getUsername(),
+	 *             user.getPassword(),
+	 *             new ArrayList<>() // 여기에서는 간단하게 권한을 비어있는 리스트로 설정했습니다.
+	 *         );
+	 *     }
+	 *
+	 * @return
+	 */
+	@Bean
+	public UserDetailsService userDetailsService() {
+		UserDetails user =
+			 User.withDefaultPasswordEncoder()
+				.username("user")
+				.password("password")
+				.roles("USER")
+				.build();
+
+		return new InMemoryUserDetailsManager(user);
+	}
+}
+```
+
+</details>
+
+<details>
+  <summary> Spring Hateoas</summary>
+
+## Spring Hateoas
+
+Spring HATEOAS (Hypermedia As The Engine Of Application State)를 사용하여 하이퍼미디어 기반 REST 서비스를 구축합니다.
+
+RESTful 웹 서비스에 하이퍼미디어를 통한 제어를 쉽게 추가할 수 있습니다.<br>
+일반적은 Rest 서버와 다르게 요청에 대한 응답 데이터만 반환하는것이 아니라 리소스의 상태와 관련된 가능한 동작도 합께 제공됩니다.<br>
+
+
+- 하이퍼미디어 :<br>
+하이퍼 미디어는 하이퍼 링크를 통해 콘텐츠에 액세스 할 수있는 모든 요소가 연결된 확장 하이퍼 텍스트 시스템의 요소로 텍스트, 데이터, 그래픽, 오디오 및 비디오를 사용하는 것입니다.<br> 텍스트, 오디오, 그래픽 및 비디오는 서로 연결되어 일반적으로 비선형 시스템으로 간주되는 정보 모음을 만듭니다.<br> 현대의 월드 와이드 웹은 콘텐츠가 대부분 상호 작용하므로 비선형적인 하이퍼 미디어의 가장 좋은 예입니다.<br>하이퍼 텍스트는 하이퍼 미디어의 하위 집합이며,이 용어는 1965 년 Ted Nelson이 처음 사용했습니다.
+
+> 주요 특징
+> 
+- Resource Wrappers<br>
+ 도메인 객체를 `Resource` 또는 `CollectionModel`객체로 감싸서 클라이언트로 전송합니다.<br> 
+이렇게 함으로서 도메인 객체와 관련된 하이퍼링크 정보도 함께 보낼 수 있습니다.
+
+
+- ControllerLinkBuilder<br>
+쉽게 하이퍼링크를 생성해주는 유틸리티 입니다.
+
+
+  - RepresentationModelAssembler<br>
+  특정 도메인 모델을 표현 모델로 변환하는 로직을 중앙화 할 수 있게 해줍니다.
+
+
+- HAL (Hypertext Application Language)<br>
+  HAL 형식의 JSON 및 XML 출력을 지원합니다.<br>
+HAL은 하이퍼미디어 API를 위한 응답 형식 중 하나로, 리소스와 해당 리소스의 관계를 정의하는 표준화된 방법을 제공합니다.
+
+> RepresentationModelAssembler 간단한 예시
+```java
+public class User {
+    private Long id;
+    private String name;
+    // ... getters and setters
+}
+
+```
+변환하면
+
+```java
+public class UserModel extends RepresentationModel<UserModel> {
+    private String name;
+
+    public UserModel(User user) {
+        this.name = user.getName();
+        add(linkTo(methodOn(UserController.class).getUser(user.getId())).withSelfRel());
+    }
+    // ... getters
+}
+
+@Component
+public class UserAssembler implements RepresentationModelAssembler<User, UserModel> {
+
+  @Override
+  public UserModel toModel(User entity) {
+    UserModel userModel = new UserModel();
+    userModel.setName(entity.getName());
+    userModel.add(linkTo(methodOn(UserController.class).getUser(entity.getId())).withSelfRel());
+    return userModel;
+  }
+}
+
+```
+변환 로직을 한번만 작성해 관리할 수 있게 만들어 줍니다.
+</details>

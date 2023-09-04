@@ -62,6 +62,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     runtimeOnly 'org.hsqldb:hsqldb' // H2DB 는 주석처리 필요
 
+/*    // security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    // thymeleaf + security 통합
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6:3.1.1.RELEASE'
+    implementation 'org.springframework.security:spring-security-test'*/
+
 }
 
 tasks.named('test') {
