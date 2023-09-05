@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,8 +20,7 @@ import java.util.stream.Collectors;
  * 또는 최소한 Component로 등록된 클래스
  *
  */
-//@SpringBootApplication
-@Component
+//@Component
 @Slf4j
 public class RelationalDataAccessApplication implements CommandLineRunner {
 

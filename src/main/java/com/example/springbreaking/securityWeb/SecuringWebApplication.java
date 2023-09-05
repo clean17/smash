@@ -1,3 +1,4 @@
+/*
 package com.example.springbreaking.securityWeb;
 
 import org.springframework.boot.SpringApplication;
@@ -10,4 +11,4 @@ public class SecuringWebApplication {
 		SpringApplication.run(SecuringWebApplication.class, args);
 	}
 
-}
+}*/

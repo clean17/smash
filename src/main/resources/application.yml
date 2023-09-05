@@ -35,7 +35,13 @@ spring:
   artemis:
     mode: embedded
 
-#storage:
-#  location: D:\someDirectory
+  mvc:
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
+
+
+storage:
+  location: D:\someDirectory
 
 
