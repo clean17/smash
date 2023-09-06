@@ -1720,7 +1720,7 @@ public class WebSecurityConfig {
 Spring HATEOAS (Hypermedia As The Engine Of Application State)를 사용하여 하이퍼미디어 기반 REST 서비스를 구축합니다.
 
 RESTful 웹 서비스에 하이퍼미디어를 통한 제어를 쉽게 추가할 수 있습니다.<br>
-일반적은 Rest 서버와 다르게 요청에 대한 응답 데이터만 반환하는것이 아니라 리소스의 상태와 관련된 가능한 동작도 합께 제공됩니다.<br>
+일반적인 Rest 서버와 다르게 요청에 대한 응답 데이터만 반환하는것이 아니라 리소스의 상태와 관련된 가능한 동작도 합께 제공됩니다.<br>
 
 
 - 하이퍼미디어 :<br>
@@ -1809,6 +1809,40 @@ public class UserAssembler implements RepresentationModelAssembler<User, UserMod
 변환 로직을 한번만 작성해 관리할 수 있게 만들어 줍니다.
 
 
+
+예를 들어 아래와 같은 컨트롤러가 있을때 `/greeting` 엔드포인트로 요청을 보내면 아래의 json을 응답받게 됩니다.
+```java
+@RestController
+public class GreetingController {
+
+    private static final String TEMPLATE = "Hello, %s!";
+
+    @RequestMapping("/greeting")
+    public HttpEntity<?> greeting(
+            @RequestParam(value = "name", defaultValue = "World") String name) {
+
+        Greeting greeting = new Greeting(String.format(TEMPLATE, name));
+        System.out.println(greeting);
+
+        // 메서드에 인수를 전달하여 특정 컨트롤러 메서드에 대한 링크를 생성
+        greeting.add(linkTo(methodOn(GreetingController.class).greeting(name)).withSelfRel());
+
+        return new ResponseEntity<>(greeting, HttpStatus.OK);
+    }
+
+}
+```
+```json
+{
+  "content": "Hello, World!",
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/greeting?name=World"
+    }
+  }
+}
+```
+즉 위 json 형식에는 이 json을 응답받기 위한 URI링크 혹은 페이징을 위한 URI링크를 포함합니다.
 
 </details>
 
