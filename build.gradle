@@ -71,6 +71,10 @@ dependencies {
     // jsp
     implementation 'javax.servlet:jstl'
     implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
+
+    // Hateoas
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+
 }
 
 tasks.named('test') {

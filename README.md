@@ -1737,8 +1737,34 @@ RESTful 웹 서비스에 하이퍼미디어를 통한 제어를 쉽게 추가할
 쉽게 하이퍼링크를 생성해주는 유틸리티 입니다.
 
 
-  - RepresentationModelAssembler<br>
+- RepresentationModel<br>
+HATEOAS의 리소스 표현 기본 클래스로서 클라이언트가 해당 리소스와 상호작용할 수 있는 링크를 포함시켜줍니다.<br>
+또한 이러한 링크를 다루는 메소드도 제공합니다.<br>
+
+ 링크를 만드는 방법
+
+`RepresentationModel`을 상속한 `UserModel` 객체를 만들고 `withSelfRel()`로 self관계의 링크를 만듭니다.
+```java
+UserModel userModel = new UserModel("John", 30);
+userModel.add(Link.of("/users/1").withSelfRel());
+```
+`self` 는 현재 리소스의 URI 를 나타냅니다.<br>
+이러한 속성에는 다음과 같은 것들이 있습니다.
+
+```
+self - 현재 리소스 URI
+next - 다음 페이지 URI(페이징)
+prev - 이전 페이지 URI(페이징)
+first - 첫번째 페이지 URI(페이징)
+last - 마지막 페이지 URI(페이징)
+up - 현재 리소스의 부모 리소스
+related - 관련된 리소스
+```
+
+
+- RepresentationModelAssembler<br>
   특정 도메인 모델을 표현 모델로 변환하는 로직을 중앙화 할 수 있게 해줍니다.
+
 
 
 - HAL (Hypertext Application Language)<br>
@@ -1781,4 +1807,35 @@ public class UserAssembler implements RepresentationModelAssembler<User, UserMod
 
 ```
 변환 로직을 한번만 작성해 관리할 수 있게 만들어 줍니다.
+
+
+
+</details>
+
+<details>
+  <summary> Jackson 라이브러리 </summary>
+
+## Jackson 라이브러리
+
+추가 예정
+</details>
+
+<details>
+  <summary> HttpEntity, ResponseEntity </summary>
+
+## HttpEntity, ResponseEntity
+
+Spring Framework에서 제공하는 클래스로 HTTP 요청, 응답의 본문과 헤더를 나타냅니다.<br>
+본문에는  JSON, XML, 문자열 등의 데이터가 들어가게 됩니다.
+
+보다 다양한 상태코드를 헤더로 반환하려면 상속 클래스인 `ResponseEntity`를 이용합니다. 
+다음과 같은 방법으로 다양한 상태코드를 응답할 수 있습니다.
+```java
+return new ResponseEntity.status(404).body("Resource not found");
+
+return new ResponseEntity.notFound().build();
+
+return new ResponseEntity<>(new ResponseDto<>( 1, "수정 완료",null), HttpStatus.OK);
+```
+
 </details>
