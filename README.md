@@ -143,10 +143,28 @@ Bean에 등록해서 의존성을 주입받아 사용합니다.
 ```java
 String result = restTemplate.getForObject("https://api.example.com/data", String.class);
 ```
-- Post
+- Post<br>
+기본적으로 `restTemplate`은 객체를 `Json`으로 변환합니다.
 ```java
 MyRequestObject request = new MyRequestObject("data");
 MyResponseObject response = restTemplate.postForObject("https://api.example.com/data", request, MyResponseObject.class);
+```
+
+Post요청으로 응답 받을때 `ResponseEntity`를 이용할 수 있습니다.<br>
+`ResponseEntity`는 헤더와 바디데이터를 포함하므로 `getBody()`같은 메소드로 데이터를 꺼낼 수 있습니다.
+```java
+ResponseEntity<MyResponseClass> response = restTemplate.postForEntity(url, requestObject, MyResponseClass.class);
+MyResponseClass responseBody = response.getBody();
+```
+
+- Put<br>
+Put은 Get, Post와 다른 방법을 사용합니다.
+
+```java
+String url = "https://example.com/api/resource";
+MyClass requestObject = new MyClass();
+
+restTemplate.put(url, requestObject);
 ```
 - 인증
 ```java
@@ -1923,5 +1941,31 @@ return new ResponseEntity.notFound().build();
 
 return new ResponseEntity<>(new ResponseDto<>( 1, "수정 완료",null), HttpStatus.OK);
 ```
+
+아래와 같은 요청으로 `ResponseEntity`를 응답받았을때 사용할 수 있는 메소드입니다.
+```java
+ResponseEntity<MyResponseClass> response = restTemplate.postForEntity(url, requestObject, MyResponseClass.class);
+MyResponseClass responseBody = response.getBody();
+
+T getBody() // 응답 본문
+
+HttpStatus getStatusCode() // 상태 코드
+
+int getStatusCodeValue() // 상태 코드
+
+MultiValueMap<String, String> getHeaders() // 응답 헤더
+
+boolean hasBody() // 바디 데이터 여부
+```
+예시
+```java
+ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+if(response.getStatusCode() == HttpStatus.OK && response.hasBody()) {
+    String body = response.getBody();
+    // body를 처리하는 로직...
+}
+
+```
+
 
 </details>
