@@ -1851,7 +1851,59 @@ public class GreetingController {
 
 ## Jackson 라이브러리
 
-추가 예정
+Java의 Json처리 라이브러리로 직렬화와 역직렬화를 구성합니다.
+
+Spring의 기본 데이터 매핑에 사용되는 `ObjectMapper`가 Jackson라이브러리의 클래스입니다.<br>
+`ObjectMapper`의 아래의 주요 메소드가 있습니다.
+```java
+writeValueAsString(Object obj) // 역직렬화
+
+readValue(String json, Class<T> clazz) // 직렬화
+```
+
+또한 주요 어노테이션으로 직렬화와 역직렬화를 보다 편하게 구성합니다.
+```java
+@JsonInclude // 필드의 직렬화 조건 지정 ( null 제외 )
+
+@JsonProperty // 필드 이름이 다를 경우 수동 매핑
+
+@JsonIgnore // json으로 주고 싶지 않은 필드
+
+@JsonFormat // 포맷 형식 지정
+
+@JsonCreator + @JsonProperty // 생성자나 팩토리 메소드를 지정합니다.
+```
+일반적으로 Spring의 기본 역직렬화 전략은 클래스의 기본생성자와 `Setter`메소드를 이용합니다.<br>
+빈 객체를 생성한 뒤에 매핑되는 json을 `Setter`로 넣게 되는데 이때 `@JsonProperty `, `@JsonCreator`, `@JsonProperty` 같은 어노테이션이 사용될 수 있습니다.
+
+하지면 클래스가 final 필드를 가져 `Setter`를 사용할 수 없다면 아래와 같은 방법으로 `Setter`사용 없이 역직렬화를 구성합니다.
+```java
+public class Greeting {
+
+  private final String content;
+
+  /**
+   * JsonCreator : Jackson라이브러리에게 POJO의 인스턴스를 생성할 수 있는 방법을 알려준다.
+   *
+   * 일반적으로 Jackson라이브러리는 json으로 객체를 만들때 기본생성자로 객체를 만들고 Setter로 데이터를 주입한다.
+   * 아래처럼 객체가 불변이 된다면 Setter로 주입할 수 없다.
+   * 이 때는 @JsonCreator와 @JsonProperty를 사용해서 객체를 생성한다.
+   *
+   * @param content
+   */
+  @JsonCreator
+  public Greeting(@JsonProperty("content") String content) {
+    this.content = content;
+  }
+
+  public String getContent() {
+    return content;
+  }
+}
+```
+
+
+
 </details>
 
 <details>
