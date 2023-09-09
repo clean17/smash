@@ -2,7 +2,6 @@ package com.example.springbreaking.batchProcessing;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
@@ -14,7 +13,6 @@ import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -33,8 +31,8 @@ import javax.sql.DataSource;
  * - PlatformTransactionManager  빈 생성 - 트랜잭션 관리
  * - 메타데이터 저장소 제공
  */
-@Configuration
-@EnableBatchProcessing
+//@Configuration
+//@EnableBatchProcessing
 public class BatchConfiguration {
 
     // EnableBatchProcessing 로 생성된 빈은 Autowired로 가져와야 함

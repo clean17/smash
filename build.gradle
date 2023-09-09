@@ -28,7 +28,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-//    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.h2database:h2'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.slf4j:slf4j-api'
 
@@ -60,7 +60,7 @@ dependencies {
 
     // spring batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
-    runtimeOnly 'org.hsqldb:hsqldb' // H2DB 는 주석처리 필요
+//    runtimeOnly 'org.hsqldb:hsqldb' // H2DB 는 주석처리 필요
 
 /*    // security
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -69,11 +69,16 @@ dependencies {
     implementation 'org.springframework.security:spring-security-test'*/
 
     // jsp
+    // providedCompile -> 컴파일에 필요, 실행시는 제공됨 // compileOnly 를 권장
     implementation 'javax.servlet:jstl'
-    implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    compileOnly 'org.apache.tomcat.embed:tomcat-embed-jasper'
 
     // Hateoas
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+
+    // Postgresql
+//    implementation 'org.postgresql:postgresql'
+
 
 }
 
