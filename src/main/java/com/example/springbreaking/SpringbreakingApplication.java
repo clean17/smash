@@ -1,16 +1,12 @@
 package com.example.springbreaking;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
-@SpringBootApplication
-@EnableScheduling
+//@SpringBootApplication
+//@EnableScheduling
 @Slf4j
 public class SpringbreakingApplication {
 
@@ -30,7 +26,7 @@ public class SpringbreakingApplication {
 	public static void main(String[] args) throws InterruptedException {
 
 		// Redis 메세징, 진입점 클래스를 명시
-		ApplicationContext ctx = SpringApplication.run(SpringbreakingApplication.class, args);
+//		ApplicationContext ctx = SpringApplication.run(SpringbreakingApplication.class, args);
 
 		// Redis 메세징
 //		StringRedisTemplate template = ctx.getBean(StringRedisTemplate.class);

@@ -3,11 +3,10 @@ package com.example.springbreaking.managingTransaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 @RequiredArgsConstructor
-@Component
+//@Component
 @Slf4j
 class AppRunner implements CommandLineRunner {
 
@@ -31,7 +30,6 @@ class AppRunner implements CommandLineRunner {
     } catch (RuntimeException e) {
       log.info("v--- The following exception is expect because 'Samuel' is too " +
           "big for the DB ---v");
-      log.error(e.getMessage());
     }
 
     for (String person : bookingService.findAllBookings()) {
