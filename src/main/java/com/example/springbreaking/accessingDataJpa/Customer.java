@@ -3,8 +3,13 @@ package com.example.springbreaking.accessingDataJpa;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Entity;
-import org.springframework.data.annotation.Id;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+
+//import org.hibernate.annotations.Entity; 사용하지 않도록 주의
+//import org.springframework.data.annotation.Id;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -13,6 +18,8 @@ import javax.persistence.GenerationType;
  * Jpa 엔티티
  * Id 명시
  * 기본생성자 필요
+ * 
+ * JPA의 어노테이션 실수 !!! javax.persistence를 사용해야 함
  */
 @Entity
 @NoArgsConstructor
@@ -38,13 +45,5 @@ public class Customer {
     return String.format(
         "Customer[id=%d, firstName='%s', lastName='%s']",
         id, firstName, lastName);
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public Long getId() {
-    return id;
   }
 }

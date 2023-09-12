@@ -8,5 +8,5 @@
 -- );
 
 -- serial 은 Postgre 의 자동증가 전략, h2 에서도 사용가능
--- drop table BOOKINGS if exists;
--- create table BOOKINGS(ID serial, FIRST_NAME varchar(5) NOT NULL);
+drop table BOOKINGS if exists;
+create table BOOKINGS(ID serial, FIRST_NAME varchar(5) NOT NULL);

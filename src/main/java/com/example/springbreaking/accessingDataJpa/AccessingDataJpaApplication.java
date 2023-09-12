@@ -6,7 +6,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-import java.util.List;
 import java.util.Optional;
 
 @SpringBootApplication
@@ -55,16 +54,36 @@ public class AccessingDataJpaApplication {
       // fetch customers by last name
       log.info("Customer found with findByLastName('Bauer'):");
       log.info("--------------------------------------------");
-      Optional<List<Customer>> optionalCustomers = repository.findByLastName("Bauer");
-      optionalCustomers.ifPresent(customers -> {
-        customers.forEach(bauer -> {
-          log.info(bauer.toString());
-        });
+      repository.findByLastName("Bauer").forEach(bauer -> {
+        log.info(bauer.toString());
       });
-      // for (Customer bauer : repository.findByLastName("Bauer")) {
-      //  log.info(bauer.toString());
-      // }
+       for (Customer bauer : repository.findByLastName("Bauer")) {
+        log.info(bauer.toString());
+       }
       log.info("");
+
+
+       /*
+       * 실행결과
+       * Customers found with findAll():
+       : -------------------------------
+       : Customer[id=1, firstName='Jack', lastName='Bauer']
+       : Customer[id=2, firstName='Chloe', lastName='O'Brian']
+       : Customer[id=3, firstName='Kim', lastName='Bauer']
+       : Customer[id=4, firstName='David', lastName='Palmer']
+       : Customer[id=5, firstName='Michelle', lastName='Dessler']
+       :
+       : Customer found with findById(1L):
+       : --------------------------------
+       : Customer[id=1, firstName='Jack', lastName='Bauer']
+       :
+       : Customer found with findByLastName('Bauer'):
+       : --------------------------------------------
+       : Customer[id=1, firstName='Jack', lastName='Bauer']
+       : Customer[id=3, firstName='Kim', lastName='Bauer']
+       : Customer[id=1, firstName='Jack', lastName='Bauer']
+       : Customer[id=3, firstName='Kim', lastName='Bauer']
+       * */
     };
   }
 
