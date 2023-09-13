@@ -71,10 +71,61 @@ public @interface SpringBootApplication { // ...
 
 ### CRUDRepository / JPARepository 차이
 
-`CRUDRepository`는 Spring Data JPA 의 상위 인터페이스
+`CRUDRepository`는 Spring Data JPA 의 상위 인터페이스입니다.
 
 `JPARepository`는 위 인터페이스에 추가로 JPA메소드를 가지고 있습니다.
 
+`CrudRepository`가 기본 제공하는 메소드로는 다음과 같습니다.
+```java
+  save(S entity), saveAll(Iterable<S> entities)
+  findById(ID id), existsById(ID id)
+  findAll(), findAllById(Iterable<ID> ids)
+  count(),
+  deleteById(ID id), delete(S entity),
+  deleteAll((Iterable<? extends T> entities)), deleteAll()
+```
+
+CrudRepository를 상속하면 다음처럼 만들 수 있스니다.
+```java
+public interface CustomerRepository extends CrudRepository<Customer, Long> {
+
+  // 하나의 엔티티만 반환할 경우 Optional을 사용한다.
+  List<Customer> findByLastName(String lastName);
+
+//  Optional<Customer> findById(long id); CrudRepository는 이미 findById를 제공한다.
+}
+```
+
+또한 JPA를 사용할때는 다음과 같은 엔티티를 생성합니다.<br>
+여기서 `@Id`, `@Entity`는 `javax.persistence`패키지를 사용합니다.
+```java
+@Entity
+@NoArgsConstructor
+@Getter
+public class Customer {
+
+  /**
+   * 자동 증가
+   */
+  @Id
+  @GeneratedValue(strategy= GenerationType.AUTO)
+  private Long id;
+  private String firstName;
+  private String lastName;
+
+  public Customer(String firstName, String lastName) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "Customer[id=%d, firstName='%s', lastName='%s']",
+        id, firstName, lastName);
+  }
+}
+```
 </details>
 
 <details>
@@ -224,6 +275,7 @@ MyResponseObject responseBody = response.getBody();
 
 애플리케이션 시작 시 실행되어야 하는 코드를 정의합니다.
 
+`@SpringBootApplication` 클래스에 아래의 모양으로 만들게 되면 파라미터는 자동으로 주입됩니다. 
 ```java
 	@Bean
 	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
@@ -236,6 +288,28 @@ MyResponseObject responseBody = response.getBody();
 ```
 8080포트로 열려있는 서버에 요청을 보내 받은 응답을 `Quote`로 받고 로그를 출력합니다.
 
+또는 아래와 같은 모양으로 구현합니다.
+```java
+/**
+ * CommandLineRunner를 구현하고 run 메소드를 재구성해서 원하는 기능을 구현한 형태
+ */
+@Component
+public class Runner implements CommandLineRunner {
+
+    private final RabbitTemplate rabbitTemplate;
+    private final Receiver receiver;
+
+    public Runner(Receiver receiver, RabbitTemplate rabbitTemplate) {
+        this.receiver = receiver;
+        this.rabbitTemplate = rabbitTemplate;
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        System.out.println("Sending message...");
+    }
+}
+```
 </details>
 
 <details>
