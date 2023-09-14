@@ -1,12 +1,12 @@
 package com.example.springbreaking.validatingData;
 
 
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
 import javax.validation.Valid;
 
 
@@ -25,7 +25,9 @@ import javax.validation.Valid;
  * addFormatters - 사용자 정의 fommatter 설정
  *
  */
-@Controller
+//@Controller
+
+	// 이녀석이 뷰리졸버를 훔쳐감
 public class WebController implements WebMvcConfigurer {
 
 	/**

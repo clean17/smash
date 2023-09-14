@@ -12,4 +12,9 @@ public class JSTLController {
         model.addAttribute("scoop", "전달");
         return "trial";
     }
+
+    @GetMapping(value = "/temp")
+    public String temp(){
+        return "temp";
+    }
 }

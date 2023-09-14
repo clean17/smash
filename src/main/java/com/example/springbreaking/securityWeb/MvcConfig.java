@@ -1,13 +1,13 @@
 package com.example.springbreaking.securityWeb;
 
-import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * 라우팅 설정
  */
-@Configuration
+//@Configuration
+	// 이녀석도 뷰리졸버를 훔쳐감
 public class MvcConfig implements WebMvcConfigurer {
 
 	public void addViewControllers(ViewControllerRegistry registry) {
