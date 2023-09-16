@@ -1,9 +1,6 @@
 package com.example.springbreaking.asyncMethod;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -34,8 +31,8 @@ import java.util.concurrent.Executor;
  *
  * AsyncConfigurer 인터페이스의 getAsyncUncaughtExceptionHandler를 오버라이딩해서 예외 처리
  */
-@SpringBootApplication
-@EnableAsync
+// @SpringBootApplication
+// @EnableAsync
 public class AsyncMethodApplication {
 
   /**
@@ -47,10 +44,10 @@ public class AsyncMethodApplication {
    * -> CompletableFuture를 반환한는 비동기 메소드(@Async) 호출
    * @param args
    */
-  public static void main(String[] args) {
-    // close the application context to shut down the custom ExecutorService
-    SpringApplication.run(AsyncMethodApplication.class, args).close();
-  }
+//  public static void main(String[] args) {
+//    // close the application context to shut down the custom ExecutorService
+//    SpringApplication.run(AsyncMethodApplication.class, args).close();
+//  }
 
   /**
    * 상단 주석처럼 만드는 방법 또는 아래처럼 만들어서 Executor를 반환하는 빈을 설정
