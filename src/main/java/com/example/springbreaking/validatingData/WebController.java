@@ -42,7 +42,7 @@ public class WebController implements WebMvcConfigurer {
 		registry.addViewController("/results").setViewName("results"); // 리다이렉트
 	}
 
-	@GetMapping("/")
+	@GetMapping("/form")
 	public String showForm(PersonForm personForm) {
 		// webmvc 설정을 하지 않으면 디폴트 값은 /resources/templates/ 의 html 로 연결
 		return "form";

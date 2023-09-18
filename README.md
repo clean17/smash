@@ -2043,3 +2043,152 @@ if(response.getStatusCode() == HttpStatus.OK && response.hasBody()) {
 
 
 </details>
+
+<details>
+  <summary> @ModelAttribute</summary>
+
+## @ModelAttribute
+
+`@ModelAttribute`는 여러가지 용도로 사용될 수 있습니다.
+
+- 자동으로 Model 객체를 생성하고 반환값을 넣습니다.
+```java
+@ModelAttribute("message")
+public String message() {
+    return "Hello, World!";
+}
+```
+- 모델에 오브젝트를 매핑할 경우
+```java
+@ModelAttribute("test")
+public SomeObject someMethod() {
+        return new SomeObject();  // 이 객체가 "test"라는 이름으로 모델에 추가됩니다.
+}
+```
+
+- 특정 객체에 요청 파라미터를 매핑시킬 수 있습니다.
+```java
+@PostMapping("/submit")
+public String submitForm(@ModelAttribute User user) {
+    // ... 
+}
+```
+
+- 공통 코드로 사용가능합니다.
+`MyController`의 모든 뷰에서 `commonAttribute`속성을 사용할 수 있게 됩니다.
+```java
+@Controller
+public class MyController {
+  @ModelAttribute("commonAttribute")
+  public String commonAttribute() {
+    return "Common Value";
+  }
+
+  // ... 다른 핸들러 메서드들 ...
+}
+```
+
+- 요청 파라미터를 매핑하면서 Model 객체에 값을 넣어 반환하려면 한번에 작성합니다.
+- 뷰에서 `${user}`로 Model에 접근이 가능합니다.
+```java
+@PostMapping("/create")
+public String createUser(@ModelAttribute User user, Model model) {
+    model.addAttribute("message", "User created successfully!");
+    return "resultPage";
+}
+```
+
+</details>
+
+<details>
+  <summary> spring-boot-starter-test</summary>
+
+## spring-boot-starter-test
+
+단위 테스트를 하기위한 스프링 부트 의존성입니다.
+```java
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+```
+
+간단한 테스트 방법으로는 아래와 같은 방법들을 사용합니다.
+```java
+/**
+ * @SpringBootTest(classes = [실행하려는 애플리케이션 이름].class)
+ *
+ * 웹 요청을 테스트하는 첫번째 방법
+ */
+@SpringBootTest(classes = Application.class)
+@AutoConfigureMockMvc // MockMvc 환경 자동 구성
+public class HelloControllerTest {
+
+	@Autowired
+	private MockMvc mvc;
+
+	@Test
+	public void getHello() throws Exception {
+		mvc.perform(MockMvcRequestBuilders.get("/").accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(content().string(equalTo("Greetings from Spring Boot!")));
+	}
+}
+```
+
+```java
+/**
+ * 랜덤포트로 실행시켜서 충돌을 방지, 여러 테스트를 동시에 진행할때 사용한다.
+ * 테스트의 독립성을 확보
+ * RANDOM_PORT 를 사용하면  TestRestTemplate 또는 WebTestClient 도구를 이용해 HTTP 호출을 테스트할 수 있습니다.
+ * 
+ * 웹 요청을 테스트하는 두번째 방법
+ */
+@SpringBootTest(classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class HelloControllerIT {
+
+	@Autowired
+	private TestRestTemplate template;
+
+    @Test
+    public void getHello() throws Exception {
+        ResponseEntity<String> response = template.getForEntity("/", String.class);
+        assertThat(response.getBody()).isEqualTo("Greetings from Spring Boot!");
+    }
+}
+```
+
+- 개인적으로 궁금한데 csrf 토큰이 있을때는 어떻게 테스트할까
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class MyIntegrationTest {
+
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    @Test
+    public void testEndpoint() {
+        ResponseEntity<String> response = restTemplate.getForEntity("/my-endpoint", String.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        // ... 추가 검증 로직 ...
+    }
+}
+
+```
+```java
+@Autowired
+private MockMvc mockMvc;
+
+@Test
+public void testWithCsrf() throws Exception {
+    MvcResult mvcResult = this.mockMvc.perform(get("/csrf")).andReturn();
+    String csrfToken = mvcResult.getResponse().getHeader("X-CSRF-TOKEN");
+
+    mockMvc.perform(post("/your-endpoint")
+            .header("X-CSRF-TOKEN", csrfToken)
+            .content("your-content"))
+            .andExpect(status().isOk());
+}
+
+```
+
+그냥 귀찮으니 개발할때 `.csrf.disable()` 하는것도 좋은 방법일지도..
+
+</details>
