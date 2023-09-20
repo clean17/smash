@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="">
+    <update id="updateStatusBasedOnSelect">
+    <!-- 여러개의 조건으로 조회된 id로 전체 로우의 상태값 변경 -->
+        UPDATE yourTableName
+        SET status =
+            CASE
+                WHEN id IN (
+                            SELECT id FROM anotherTable
+                            WHERE
+                            <foreach item="itemId" index="index" collection="ids" open="(" separator=" OR" close=")">
+                                id = #{itemId}
+                            </foreach>
+                            )
+                THEN 1
+                ELSE 0
+                ELSE 0
+            END;
+    </update>
+</mapper>
