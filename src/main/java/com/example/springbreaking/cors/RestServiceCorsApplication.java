@@ -18,6 +18,9 @@ public class RestServiceCorsApplication {
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
+				/**
+				 * localhost에서만 허용된 엔드포인트 설정
+				 */
 				registry.addMapping("/greeting-javaconfig").allowedOrigins("http://localhost:8080");
 			}
 		};

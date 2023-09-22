@@ -2192,3 +2192,124 @@ public void testWithCsrf() throws Exception {
 그냥 귀찮으니 개발할때 `.csrf.disable()` 하는것도 좋은 방법일지도..
 
 </details>
+
+<details>
+  <summary> CORS</summary>
+
+CORS 설정하기
+
+`Cross-Origin Resource Sharing` 의 약자로 웹 페이지의 다른 출처에서 리소스를 공유할 수 있게 해주는 메커니즘입니다.
+
+- 필요한 이유
+> 웹 보안에서, Same-Origin Policy (동일 출처 정책)이라는 규칙이 있습니다. <br>이 정책에 따라, 웹 페이지는 동일한 출처에서만 리소스를 로드할 수 있습니다. <br> 다시 말해, http://example.com의 웹 페이지는 다른 도메인, 예를 들어 http://another.com에서 직접 AJAX 요청을 할 수 없습니다. <br>이렇게 제한을 두는 이유는 보안상의 문제로, 악의적인 스크립트가 사용자의 데이터를 탈취하거나 변조하는 것을 막기 위함입니다.
+
+- 작동방식
+> CORS는 HTTP 헤더를 사용하여 작동합니다.<br>
+웹 페이지가 다른 출처의 리소스를 요청하면, 브라우저는 해당 리소스를 제공하는 서버에 "preflight" 요청을 보냅니다.<br>
+이 요청에는 Origin 헤더가 포함되어 웹 페이지의 출처를 알립니다.<br>
+
+- 주요 혜더
+> Origin: 리소스에 접근을 시도하는 페이지의 출처.<br>
+Access-Control-Allow-Origin: 리소스에 접근이 허용된 출처.<br>
+Access-Control-Allow-Methods: 허용된 HTTP 메서드 (예: GET, POST).<br>
+Access-Control-Allow-Headers: 서버가 인식하는 HTTP 헤더 목록.<br>
+Access-Control-Allow-Credentials: 인증 정보(쿠키나 HTTP 인증)와 함께 요청을 보낼지 여부를 나타내는 플래그.<br>
+Access-Control-Expose-Headers: 클라이언트에게 노출되어야 하는 헤더 목록.<br>
+Access-Control-Max-Age: preflight 요청의 결과를 캐시하는 시간.<br>
+
+`@SpringBootApplication` 클래스에서 `@Bean`설정을 하는 방법.
+```java
+@Bean
+public WebMvcConfigurer corsConfigurer() {
+	return new WebMvcConfigurer() {
+		@Override
+		public void addCorsMappings(CorsRegistry registry) {
+			/**
+			 * localhost에서만 허용된 엔드포인트 설정
+			 */
+			registry.addMapping("/greeting-javaconfig").allowedOrigins("http://localhost:8080");
+		}
+	};
+}
+```
+`@CrossOrigin` 어노테이션을 이용해서 설정하는 방법
+```java
+	/**
+	 * CORS 허용 주소 origins = "http://localhost:8080"
+	 * 허용할 메소드 methods
+	 * 허용할 헤더 allowedHeaders
+	 * 브라우저에 노출시킬 헤더 exposedHeaders
+	 * 인증 정보가 필요한지 allowCredentials (default : false)
+	 * 최대 캐시 시간 maxAge
+	 *
+	 *
+	 * 하지만 일반적으로는 WebMvcConfigurer 를 구현해서 전역 설정을 세팅한다.
+	 *
+	 * @param name
+	 * @return
+	 */
+	@CrossOrigin(origins = "http://localhost:8080")
+	@GetMapping("/greeting")
+	public Greeting greeting(@RequestParam(required = false, defaultValue = "World") String name) {
+		System.out.println("==== get greeting ====");
+		return new Greeting(counter.incrementAndGet(), String.format(template, name));
+		// 리턴 json {"id":1,"content":"Hello, World!"}
+	}
+```
+일반적으로 가장 많이 사용되는 방법
+```java
+/**
+ * 일반적인 전역 설정
+ */
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")  // 모든 엔드포인트에 대한 CORS 설정
+                .allowedOrigins("http://example.com", "http://another-example.com")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedHeaders("Header1", "Header2", "Header3")
+                .exposedHeaders("Header1", "Header2")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+}
+```
+그리고 yaml의 프로퍼티 설정을 가져오는 방법입니다.
+```yaml
+# @Value 또는 @ConfigurationProperties 을 사용하여 설정을 가져갈 수 있습니다.
+cors:
+  allowed-origins:
+    - http://localhost:8080
+    - http://another-example.com
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+```
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Value("${cors.allowed-origins}")
+    private String[] allowedOrigins;
+
+    @Value("${cors.allowed-methods}")
+    private String[] allowedMethods;
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins(allowedOrigins)
+                .allowedMethods(allowedMethods)
+                .allowedHeaders("header1", "header2", "header3")
+                .exposedHeaders("header1", "header2")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+}
+```
+
+</details>

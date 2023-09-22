@@ -45,4 +45,13 @@ spring:
 storage:
   location: D:\someDirectory
 
-
+# @Value 또는 @ConfigurationProperties 을 사용하여 설정을 가져갈 수 있습니다.
+cors:
+  allowed-origins:
+    - http://localhost:8080
+    - http://another-example.com
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
