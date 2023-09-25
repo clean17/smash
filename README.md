@@ -2313,3 +2313,209 @@ public class WebConfig implements WebMvcConfigurer {
 ```
 
 </details>
+
+<details>
+  <summary>WebSocket</summary>
+
+## WebSocket
+웹소켓은 TCP 위의 얇고 가벼운 계층입니다.<br>
+이는 메시지를 삽입하기 위해 "하위 프로토콜"을 사용하는 데 적합합니다.<br>
+
+즉, 다양한 종류의 메세지나 데이터 형식을 처리할 수 있습니다.<br>
+웹소켓 프로토콜 자체는 단순히 메세지를 전송하기 위한 규격이며, 메시지의 내용이나 형식을 규제하지 않습니다.
+
+
+따라서 서로 다른 애플리케이션간의 웹소켓 통신을 위해서 그들만의 하위 프로토콜을 사용할 수 있습니다.<br>
+예를들어 채팅 웹소켓은 메세지 종류, 형식, 상태등을 정의하는 프로토콜을 사용하며,<br>
+게임 서버의 웹소켓은 플레이어의 위치, 액션, 게임의 상태등을 정의하는 프로토콜을 사용합니다.<br>
+
+웹소켓 연결을 초기화할 때, 클라이언트와 서버는 `Sec-WebSocket-Protocol`헤더를 사용해 원하는 하위 프로토콜을 협상합니다.<br>
+결론적으로 웹소켓은 다양한 애플리케이션과 서비스의 요구사항에 따라 유연한 프로토콜을 도입함으로써 다양한 하위 프로토콜을 사용하는데 적합하다 할 수 있습니다.
+
+
+</details>
+
+<details>
+ <summary> STOMP</summary>
+
+## STOMP - Simple (or Streaming) Text Oriented Messaging Protocol
+
+말 그대로 간단한 메세지 기반의 프로토콜입니다.<br>
+명령어와 헤더를 통해 메세지의 전달사항을 구성합니다.
+
+STOMP는 메시지 지향 미들웨어 시스템 간의 간단한 연결을 위해 설계되었습니다.<br>
+예를 들어, Java의 ActiveMQ나 RabbitMQ와 같은 브로커에서 STOMP 클라이언트를 사용하여 메시지를 보내고 받는 것이 가능합니다.<br>
+
+간단한 STOMP를 구현해보겠습니다.<br>
+
+메세지 프로토콜에서는 ResponseBody가 없더라도 Json을 반환합니다.<br>
+일반적으로 대부분의 프레임워크에서 `/static/index.html`은 기본적으로 제공하는 매핑파일입니다.
+```java
+@Controller
+public class GreetingController {
+
+  /**
+   * @MessageMapping - 웹소켓을 매핑 - 생산자가 연결할 주소
+   * @SendTo - 해당 주소로 응답을 반환한다 - 수신자가 구독할 주소
+   * SendTo를 구독한 모든 유저에게 메세지를 전달
+   * 
+   * @param message
+   * @return
+   * @throws Exception
+   */
+  @MessageMapping("/hello")
+  @SendTo("/topic/greetings")
+  public Greeting greeting(HelloMessage message) throws Exception {
+    Thread.sleep(10); // simulated delay
+    return new Greeting("Hello, " + HtmlUtils.htmlEscape(message.getName()) + "!");
+  }
+}
+```
+웹소켓의 메세지 브로커 설정입니다.
+```java
+/**
+ * 메세지 브로커의 역할 : 생산자의 메세지를 받아 수신자에게 전달
+ * 비동기 메세징 프로토콜을 이용해 서로 다른 애플리케이션, 서비스를 중개합니다.
+ *
+ * 주요 기능
+ * 
+ * - 디 커플링
+ *   서로의 의존성을 제거해 영향을 미치지 않습니다.
+ *   
+ * - 메세지 캐싱
+ *   브로커는 메세지를 전달하기전 잠시 저장하고 있어서 수신자가 받을 상태가 되면 전달합니다.
+ *   
+ * - 스케일 아웃
+ *   트래픽이 증가하면 브로커는 수평적으로 확장합니다.
+ *   
+ * - 라우팅
+ *   특정 규칙이나 패턴을 통해 라우팅을 기능을 제공합니다.
+ *   
+ * - 신뢰성
+ *   메세지의 persistence, 트랜잭션, 중복방지등의 기능
+ *   
+ * - 다양한 프토토콜 지원
+ *   MQTT, AMQP, STOMP등..
+ *
+ * 일반적으로 사용되는 메세지 브로커는 RabbitMQ, Apache Kafka, ActiveMQ, MQTT
+ *
+ */
+@Configuration
+@EnableWebSocketMessageBroker // 메세지 브로커 활성화
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+  @Override
+  public void configureMessageBroker(MessageBrokerRegistry config) {
+    // 브로커 활성화 + 브로드캐스팅 -> 클라이언트가 구독해 메세지를 수신할 주소를 설정
+    config.enableSimpleBroker("/topic");
+    // 서버로 메세지를 보낼 주소 접두사 
+    //   -> `/app/hello`로 보내면 `@MessageMapping("/hello")`가 처리한다.
+    config.setApplicationDestinationPrefixes("/app");
+  }
+
+  @Override
+  public void registerStompEndpoints(StompEndpointRegistry registry) {
+    // 엔드포인트 - 클라이언트가 웹소켓을 연결할 때 사용할 주소 설정
+    registry.addEndpoint("/gs-guide-websocket");
+  }
+
+}
+```
+그리고 `index.html`에 STOMP를 사용하기 위한 스크립트를 추가합니다.
+```html
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+```
+
+스크립트로 STOMP를 구현하는 코드입니다.
+```java
+/**
+ * StompJs를 이용한 웹소켓 연결 초기화
+ * @type {StompJs.Client}
+ */
+const stompClient = new StompJs.Client({
+    brokerURL: 'ws://localhost:8080/gs-guide-websocket'
+});
+
+/**
+ * 연결되면 렌더링 + 구독
+ * @param frame
+ */
+stompClient.onConnect = (frame) => {
+    setConnected(true);
+    console.log('Connected: ' + frame);
+    stompClient.subscribe('/topic/greetings', (greeting) => {
+        showGreeting(JSON.parse(greeting.body).content);
+    });
+};
+
+stompClient.onWebSocketError = (error) => {
+    console.error('Error with websocket', error);
+};
+
+stompClient.onStompError = (frame) => {
+    console.error('Broker reported error: ' + frame.headers['message']);
+    console.error('Additional details: ' + frame.body);
+};
+
+/**
+ * 연결이 되면 버튼 + 테이블 렌더링
+ * @param connected
+ */
+function setConnected(connected) {
+    // prop -> 해당 속성을, 두번째 파라미터의 값으로 결정 ( 토글 )
+    $("#connect").prop("disabled", connected);
+    $("#disconnect").prop("disabled", !connected);
+    if (connected) {
+        $("#conversation").show();
+    }
+    else {
+        $("#conversation").hide();
+    }
+    $("#greetings").html("");
+}
+
+/**
+ * 최초 연결
+ */
+function connect() {
+    stompClient.activate();
+}
+
+/**
+ * 연결 끊기
+ */
+function disconnect() {
+    stompClient.deactivate();
+    setConnected(false);
+    console.log("Disconnected");
+}
+
+/**
+ * publish - 메세지 생산
+ */
+function sendName() {
+    stompClient.publish({
+        destination: "/app/hello",
+        body: JSON.stringify({'name': $("#name").val()})
+    });
+}
+
+/**
+ * 채팅 렌더링
+ * @param message
+ */
+function showGreeting(message) {
+    $("#greetings").append("<tr><td>" + message + "</td></tr>");
+}
+
+// Event Handler
+$(function () {
+    $("form").on('submit', (e) => e.preventDefault());
+    $( "#connect" ).click(() => connect());
+    $( "#disconnect" ).click(() => disconnect());
+    $( "#send" ).click(() => sendName());
+});
+```
+
+여러 브라우저로 테스트해보면 연결되어 있던 다른 수신자들에게 메세지가 전송됩니다.
+</details> 
