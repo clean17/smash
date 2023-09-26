@@ -2,12 +2,11 @@ package com.example.springbreaking.messagingRabbitMQ;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 
 /**
  * CommandLineRunner를 구현하고 run 메소드를 재구성해서 원하는 기능을 구현한 형태
  */
-@Component
+//@Component
 public class Runner implements CommandLineRunner {
 
   private final RabbitTemplate rabbitTemplate;
