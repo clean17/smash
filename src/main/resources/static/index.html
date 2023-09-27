@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>Hello WebSocket</title>
@@ -49,4 +49,23 @@
     </div>
 </div>
 </body>
+</html> -->
+
+<!-- angularjs 연습 -->
+<!doctype html>
+<html ng-app="demo">
+	<head>
+		<title>Hello AngularJS</title>
+		<!-- 앵귤러 스크립트를 추가했으므로 설치할 필요없이 사용가능 -->
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+    	<script src="helloAngular.js"></script>
+	</head>
+
+	<body>
+		<div ng-controller="Hello">
+			<!-- 앵귤러 함수 호출 및 변수 바인딩 방법 -->
+			<p>The ID is {{greeting.id}}</p>
+			<p>The content is {{greeting.content}}</p>
+		</div>
+	</body>
 </html>

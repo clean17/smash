@@ -34,6 +34,10 @@ public class GreetingController {
 		System.out.println("==== get greeting ====");
 		return new Greeting(counter.incrementAndGet(), String.format(template, name));
 		// 리턴 json {"id":1,"content":"Hello, World!"}
+
+		/**
+		 * 추가적으로 angular 연습용으로 helloAngular.js 가 이 주소로 요청을 보내고 json을 가져간다.
+		 */
 	}
 
 }
