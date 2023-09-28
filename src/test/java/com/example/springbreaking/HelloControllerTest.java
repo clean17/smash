@@ -1,8 +1,8 @@
 package com.example.springbreaking;
 
-import com.example.springbreaking.springBoot.Application;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * 웹 요청을 테스트하는 첫번째 방법
  */
-@SpringBootTest(classes = Application.class)
+@SpringBootTest(classes = SpringApplication.class)
 @AutoConfigureMockMvc // MockMvc 환경 자동 구성
 public class HelloControllerTest {
 

@@ -57,7 +57,13 @@ public @interface SpringBootApplication { // ...
   (`spring-context.xml`의 역할)
 
 
-- `@ComponentScan`은 현재 패키지 및 하위 패키지를 스캔하여 컴포넌트를 찾아서 `bean` 등록
+- `@ComponentScan`은 현재 패키지 및 하위 패키지를 스캔하여 컴포넌트를 찾아서 `bean` 등록<br>
+여기서 간과하지 말아야 할 부분은 절대적으로 `@SpringBootApplication`이 붙은 클래스가 지엽적은 디렉토리에 있다면 외부 빈들을 등록하지 못한다 !!!!!!<br>
+
+
+- 따라서 실행 패키지 내부에 컨트롤러가 특별히 지정되어 있지 않다면 스프링은 기본적으로 `static/index.html`
+을 기본적인 `localhost:8080/` 요청의 응답으로 반환합니다.<br>
+이러한 설정은 다른 프레임워크에서도 동일한 기능입니다.( ex. express 등..)
 
 이러한 자동구성에서 제외시키고 싶을때는 아래의 방법을 이용합니다.
 ```java
@@ -2519,3 +2525,530 @@ $(function () {
 
 여러 브라우저로 테스트해보면 연결되어 있던 다른 수신자들에게 메세지가 전송됩니다.
 </details> 
+
+<details>
+  <summary> JPA Paging</summary>
+
+## JPA Paging
+
+JPA가 제공해주는 기능중에 유용한 페이징 기능에 대해서 알아봅시다.<br>
+일반적으로 페이징은 페이지 넘버와 한 페이지에서 보여질 콘텐츠의 사이즈 정보를 이용합니다.
+
+먼저 페이징을 구현하는 다양한 방법을 소개하겠습니다.<br>
+
+직접 쿼리에서 페이징을 구현한다면
+```sql
+SELECT * 
+FROM YOUR_TABLE
+ORDER BY SOME_COLUMN
+OFFSET START_INDEX ROWS FETCH NEXT PAGE_SIZE ROWS ONLY;
+```
+JPA의 `Query`와 `TypedQuery` 사용한다면
+```java
+ TypedQuery<MyEntity> query = entityManager.createQuery("SELECT e FROM MyEntity e", MyEntity.class);
+ query.setFirstResult((pageNumber - 1) * pageSize);
+ query.setMaxResults(pageSize);
+ List<MyEntity> results = query.getResultList();
+```
+`JdbcTemplate` 사용한다면
+```java
+ String sql = "SELECT * FROM my_table LIMIT ? OFFSET ?";
+ List<MyEntity> results = jdbcTemplate.query(sql, new Object[]{pageSize, (pageNumber - 1) * pageSize}, new MyEntityRowMapper());
+```
+Native SQL 사용한다면
+```java
+ Query query = entityManager.createNativeQuery("SELECT * FROM my_table LIMIT ? OFFSET ?", MyEntity.class);
+ query.setParameter(1, pageSize);
+ query.setParameter(2, (pageNumber - 1) * pageSize);
+ List<MyEntity> results = query.getResultList();
+```
+또는 Web에서 페이징에 대한 정보를 쿼리스트링으로 날리고 <br>
+로직에서 `Pageable`인터페이스로 페이징을 구현할 수 있습니다.<br>
+`?page=1&size=20&sort=name,asc&sort=age,desc`<br>
+
+JPA와의 호환성을 위해서 쿼리에서 Pageable을 사용한다면 아래와 같습니다.<br>
+`PageImpl`은 `Page`인터페이스르 구현한 구현체로 데이터 정보 + 페이징 정보 + 페이징된 데이터 길이를 넣어 만들 수 있습니다.
+```java
+Page<MyEntity> page = new PageImpl<>(content, pageable, total);
+```
+```sql
+    SELECT * FROM (
+        SELECT ROWNUM AS RN
+        ,      AA.*
+        FROM (
+            { 커스텀 쿼리 }
+             ) AA
+    )
+    WHERE RN BETWEEN ${(pageable.page * pageable.pageSize) + 1} 
+      AND ${(pageable.page + 1) * pageable.pageSize}
+```
+
+JPA에서는 페이징을 위한 `Page`인터페이스를 제공합니다.<br>
+여기에는 다양한 옵션들을 제공하므로 개발자는 직접 구현할 필요가 없습니다.
+```sql
+{
+    "content": [
+        {
+            "id": 1,
+            "firstName": "John",
+            "lastName": "Doe",
+            "email": "john.doe@example.com"
+            // ... 다른 User 엔터티의 필드들 ...
+        },
+        {
+            "id": 2,
+            "firstName": "Jane",
+            "lastName": "Doe",
+            "email": "jane.doe@example.com"
+            // ... 다른 User 엔터티의 필드들 ...
+        }
+        // ... 페이지에 따른 다른 User 객체들 ...
+    ],
+    "pageable": {
+        "sort": {
+            "sorted": false,
+            "unsorted": true,
+            "empty": true
+        },
+        "offset": 0,
+        "pageNumber": 0,
+        "pageSize": 10,
+        "paged": true,
+        "unpaged": false
+    },
+    "totalPages": 5,
+    "totalElements": 50,
+    "last": false,
+    "first": true,
+    "sort": {
+        "sorted": false,
+        "unsorted": true,
+        "empty": true
+    },
+    "numberOfElements": 10,
+    "size": 10,
+    "number": 0,
+    "empty": false
+}
+```
+반환된 `Page<>`의 데이터에 접근할때는 `getContent()`, `getSize()`같은 메소드를 이용합니다.
+
+그리고 Page의 제네릭에 JPA에서 사용할 도메인을 설정한다면 import에 주의해야합니다.
+`javax.persistence`를 사용해야함을 유의합시다.
+```java
+import lombok.Getter;
+import lombok.Setter;
+
+import javax.persistence.Id;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+
+@Entity
+@Getter
+@Setter
+public class Person {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.AUTO)
+  private Long id;
+
+  private String firstName;
+  private String lastName;
+}
+```
+여기까지만 사용하더라도 기본적인 페이징기능은 구현이됩니다.
+</details>
+
+<details>
+  <summary> Spring Data Rest + curl</summary>
+
+## Spring Data Rest
+
+JPA 페이징에 더해 `Spring Data Rest` 의존성을 이용해서 HAL형식으로 JSON을 반환하는 방법을 알아보겠습니다.<br>
+HAL형식은 Hateoas를 구현하는 형식의 하나로 관련된 링크같은 정보를 줄 수 있게 됩니다.
+
+먼저 의존성을 추가합니다.
+```xml
+implementation 'org.springframework.boot:spring-boot-starter-data-rest
+```
+
+`data-rest` 의존성은 `@RepositoryRestResource` 을 사용한 레포지토리를 자동으로 RESTful서비스로 만들어 줍니다.<br>
+또한 기본적인 CRUD 연산을 위한 REST API 엔드포인트가 자동으로 생성됩니다.<br>
+그리고 `HAL` 형식 지원합니다. ( HATEOAS 원칙을 구현하기 위한 표현 형식 )
+
+이러한 기능은 `@RepositoryRestResource` 어노테이션을 이용해서 구현됩니다.
+```java
+@RepositoryRestResource(collectionResourceRel = "people_test", path = "people")
+public interface PersonRepository extends PagingAndSortingRepository<Person, Long> {
+
+  List<Person> findByLastName(@Param("name") String name);
+}
+```
+여기서 `PagingAndSortingRepository` 는 `CrudRepository`를 상속하므로 다음과 같은 CRUD기능이 자동으로 추가됩니다.
+
+```java
+GET /people: 모든 Person 엔터티를 페이징하여 조회합니다.
+GET /people/{id}: 주어진 ID의 Person 엔터티를 조회합니다.
+POST /people: 새로운 Person 엔터티를 생성합니다.
+PUT /people/{id}: 주어진 ID의 Person 엔터티를 업데이트합니다.
+DELETE /people/{id}: 주어진 ID의 Person 엔터티를 삭제합니다.
+```
+
+위 설정을 토대로 커맨드 요청을 해보면 아래와 같은 응답을 받습니다.
+```
+$ curl localhost:8080/people
+{
+  "_embedded" : {
+    "people" : [ ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/people"
+    },
+    "profile" : {
+      "href" : "http://localhost:8080/profile/people"
+    },
+    "search" : {
+      "href" : "http://localhost:8080/people/search"
+    }
+  },
+  "page" : {
+    "size" : 20,
+    "totalElements" : 0,
+    "totalPages" : 0,
+    "number" : 0
+  }
+}
+```
+Spring Data Rest 는 HAL 형식의 데이터를 반환한다고 했으므로 Hateoas의 응답 형식과 동일한 형태를 띄게 됩니다.
+
+아래의 주소는 애플리케이션에서 요청가능한 모든 링크 정보를 반환합니다.<br>
+주의점은 `GetMapping(value = "/")`을 만들지 않은 상태에서 `static/index.html`이 존재하지 않아야 합니다.<br>
+만약 `PersonRepository` 내부의 아무런 메소드가 존재하지 않는다면 아래와 같은 응답을 반환 받습니다.
+```
+$ curl localhost:8080
+{
+  "_links" : {
+    "customers" : {
+      "href" : "http://localhost:8080/customers"
+    },
+    "people" : {
+      "href" : "http://localhost:8080/people{?page,size,sort}",
+      "templated" : true
+    },
+    "profile" : {
+      "href" : "http://localhost:8080/profile"
+    }
+  }
+}
+```
+메소드를 추가했다면 `/people`에 대한 요청 링크정보가 변하게 됩니다.
+```java
+"people" : {
+      "href" : "http://localhost:8080/people{?page,size,sort}",
+      "templated" : true
+    },
+```
+이 설정 그대로 요청을 날려본다면 아래의 정보를 반환받습니다.
+```
+$ curl localhost:8080/people
+{
+  "_embedded" : {
+    "people" : [ ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/people"
+    },
+    "profile" : {
+      "href" : "http://localhost:8080/profile/people"
+    },
+    "search" : {
+      "href" : "http://localhost:8080/people/search"
+    }
+  },
+  "page" : {
+    "size" : 20,
+    "totalElements" : 0,
+    "totalPages" : 0,
+    "number" : 0
+  }
+}
+```
+`PagingAndSortingRepository`를 상속한 인터페이스 이므로 Page에 대한 정보도 나오게 됩니다.<br>
+또한 `_embedded`가 비어있는 이유는 현재 요청이 DB를 거치지 않았으므로 리소스가 없기 때문입니다.
+
+
+`PagingAndSortingRepository`는 `CrudRepository`를 상속했으므로 기본적인 CRUD 요청이 가능합니다.
+```
+$ curl -i -H "Content-Type:application/json" -d '{"firstName": "Frodo", "lastName": "Baggins"}' http://localhost:8080/people
+HTTP/1.1 201 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Location: http://localhost:8080/people/6
+Content-Type: application/hal+json
+Transfer-Encoding: chunked
+Date: Thu, 28 Sep 2023 12:00:16 GMT
+
+{
+  "firstName" : "Frodo",
+  "lastName" : "Baggins",
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/people/6"
+    },
+    "person" : {
+      "href" : "http://localhost:8080/people/6"
+    }
+  }
+}
+```
+`-i`옵션으로 응답의 헤더 정보를 출력하고<br>
+`-d`옵션으로 POST요청을 보냅니다.<br>
+최초 서버 실행시 5명의 더미 데이터가 메모리에 담겼으므로 6번이 생성됩니다.
+```
+Customer[id=1, firstName='Jack', lastName='Bauer']
+Customer[id=2, firstName='Chloe', lastName='O'Brian']
+Customer[id=3, firstName='Kim', lastName='Bauer']
+Customer[id=4, firstName='David', lastName='Palmer']
+Customer[id=5, firstName='Michelle', lastName='Dessler']
+```
+`Customer` 와 `Person` 객체 모두 자동증가 옵션을 사용중이므로 <br>
+`@GeneratedValue(strategy = GenerationType.AUTO)`<br>
+기존의 5명의 `Customer` 와 1명의 `Person`이 만들어 졌습니다.
+
+```
+$ curl localhost:8080/customers
+{
+  "_embedded" : {
+    "customers" : [ {
+      "firstName" : "Jack",
+      "lastName" : "Bauer",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/customers/1"
+        },
+        "customer" : {
+          "href" : "http://localhost:8080/customers/1"
+        }
+      }
+    }, {
+      "firstName" : "Chloe",
+      "lastName" : "O'Brian",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/customers/2"
+        },
+        "customer" : {
+          "href" : "http://localhost:8080/customers/2"
+        }
+      }
+    }, {
+      "firstName" : "Kim",
+      "lastName" : "Bauer",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/customers/3"
+        },
+        "customer" : {
+          "href" : "http://localhost:8080/customers/3"
+        }
+      }
+    }, {
+      "firstName" : "David",
+      "lastName" : "Palmer",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/customers/4"
+        },
+        "customer" : {
+          "href" : "http://localhost:8080/customers/4"
+        }
+      }
+    }, {
+      "firstName" : "Michelle",
+      "lastName" : "Dessler",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/customers/5"
+        },
+        "customer" : {
+          "href" : "http://localhost:8080/customers/5"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/customers"
+    },
+    "profile" : {
+      "href" : "http://localhost:8080/profile/customers"
+    },
+    "search" : {
+      "href" : "http://localhost:8080/customers/search"
+    }
+  }
+}
+
+
+```
+```
+$ curl localhost:8080/people
+{
+  "_embedded" : {
+    "people" : [ {
+      "firstName" : "Frodo",
+      "lastName" : "Baggins",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/people/6"
+        },
+        "person" : {
+          "href" : "http://localhost:8080/people/6"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/people"
+    },
+    "profile" : {
+      "href" : "http://localhost:8080/profile/people"
+    },
+    "search" : {
+      "href" : "http://localhost:8080/people/search"
+    }
+  },
+  "page" : {
+    "size" : 20,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}
+
+```
+
+그리고 제공된 링크 정보를 이용해 한명의 정보를 조회한다면 아래와 같이 응답받습니다.
+```
+$ curl localhost:8080/customers/3
+{
+  "firstName" : "Kim",
+  "lastName" : "Bauer",
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/customers/3"
+    },
+    "customer" : {
+      "href" : "http://localhost:8080/customers/3"
+    }
+  }
+}
+
+```
+또한 검색할 수 있는 링크로 검색 방법도 알 수 있습니다.
+```
+$ curl http://localhost:8080/customers/search
+{
+  "_links" : {
+    "findByLastName" : {
+      "href" : "http://localhost:8080/customers/search/findByLastName{?lastName}",
+      "templated" : true
+    },
+    "self" : {
+      "href" : "http://localhost:8080/customers/search"
+    }
+  }
+}
+
+```
+
+알아낸 검색방법으로 쿼리스트링 날리기
+```
+$ curl http://localhost:8080/customers/search/findByLastName?lastName=Bauer
+{
+  "_embedded" : {
+    "customers" : [ {
+      "firstName" : "Jack",
+      "lastName" : "Bauer",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/customers/1"
+        },
+        "customer" : {
+          "href" : "http://localhost:8080/customers/1"
+        }
+      }
+    }, {
+      "firstName" : "Kim",
+      "lastName" : "Bauer",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/customers/3"
+        },
+        "customer" : {
+          "href" : "http://localhost:8080/customers/3"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/customers/search/findByLastName?lastName=Bauer"
+    }
+  }
+}
+
+
+```
+수정 요청은 `-X PUT`을 이용합니다. 
+```
+$ curl -X PUT -H "Content-Type:application/json" -d '{"firstName": "America", "lastName": "Captain"}' http://localhost:8080/customers/1
+{
+  "firstName" : "America",
+  "lastName" : "Captain",
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/customers/1"
+    },
+    "customer" : {
+      "href" : "http://localhost:8080/customers/1"
+    }
+  }
+}
+
+```
+삭제 방법입니다.
+```
+$ curl -X DELETE http://localhost:8080/people/6
+
+$ curl  http://localhost:8080/people
+{
+  "_embedded" : {
+    "people" : [ ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/people"
+    },
+    "profile" : {
+      "href" : "http://localhost:8080/profile/people"
+    },
+    "search" : {
+      "href" : "http://localhost:8080/people/search"
+    }
+  },
+  "page" : {
+    "size" : 20,
+    "totalElements" : 0,
+    "totalPages" : 0,
+    "number" : 0
+  }
+}
+
+```
+</details>

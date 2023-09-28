@@ -41,6 +41,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.slf4j:slf4j-api'
 
+    // @RepositoryRestResource 을 사용한 repository를 자동으로 RESTful서비스로 만들어 줌
+    // -> CRUD 연산을 위한 REST API 엔드포인트가 자동으로 생성
+    // -> HAL 형식 지원 ( HATEOAS 원칙을 구현하기 위한 표현 형식 )
+    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+
     // 비동기 - javaDSL 제공 [ @Scheduled(fixedRate = 5000)  + @EnableScheduling ]
     // testImplementation 'org.awaitility:awaitility:3.1.2'
     
@@ -85,7 +90,7 @@ dependencies {
 //    compileOnly 'org.apache.tomcat.embed:tomcat-embed-jasper'
 
     // Hateoas
-    // implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+//     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
 
     // Postgresql
 //    implementation 'org.postgresql:postgresql'

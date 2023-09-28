@@ -41,6 +41,11 @@ spring:
       suffix: .jsp
     throw-exception-if-no-handler-found: true
 
+  # json pretty-printed
+  jackson:
+    serialization:
+      indent_output: true
+
 
 storage:
   location: D:\someDirectory

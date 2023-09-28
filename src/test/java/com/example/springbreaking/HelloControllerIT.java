@@ -1,6 +1,5 @@
 package com.example.springbreaking;
 
-import com.example.springbreaking.springBoot.Application;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 
  * 웹 요청을 테스트하는 두번째 방법
  */
-@SpringBootTest(classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = SpringbreakingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class HelloControllerIT {
 
 	@Autowired

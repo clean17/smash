@@ -1,6 +1,6 @@
 angular.module('demo', []) // 모듈 생성
 .controller('Hello', function($scope, $http) {
-    $http.get('http://localhost:8080/greeting').
+    $http.get('http://localhost:8080/greetingAngular').
         then(function(response) {
             $scope.greeting = response.data; // greeting 변수(스코프)에 응답받은 데이터 할당(json)
         });
