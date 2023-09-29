@@ -1,4 +1,5 @@
 server:
+#  port: 8761 # 유레카
   port: 8080
 
 #management:
@@ -60,3 +61,14 @@ cors:
     - POST
     - PUT
     - DELETE
+
+# spring cloud
+#eureka:
+#  client:
+#    register-with-eureka: false # 자신을 유레카 서버에 등록하지 않도록
+#    fetch-registry: false # 유레카 서버가 다른 유레카 서버 서비스 목록을 가져오지 않도록
+#
+#logging:
+#  level:
+#    com.netflix.eureka: OFF
+#    com.netflix.discovery: OFF

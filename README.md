@@ -3052,3 +3052,38 @@ $ curl  http://localhost:8080/people
 
 ```
 </details>
+
+<details>
+  <summary>Spring Cloud</summary>
+
+## Spring Cloud
+
+Spring Cloud는 마이크로서비스 아키텍처를 구축, 배포 및 운영하는 데 필요한 도구와 프레임워크의 모음입니다.<br>
+또한 Spring Boot의 기본 원칙에 기반하여 서비스 간의 통신, 서비스 디스커버리, 구성 관리, 회로 차단, 로드 밸런싱 등과 같은 일반적인 패턴을 쉽게 구현할 수 있게 도와줍니다.<br>
+
+> Spring Cloud의 기능
+
+- 서비스 디스커버리 (Service Discovery): 마이크로서비스 간의 통신을 위해 서비스를 자동으로 찾을 수 있게 해주는 기능. 주로 Netflix Eureka나 HashiCorp's Consul과 같은 도구를 사용합니다.
+
+
+- 서킷 브레이커 (Circuit Breaker): 서비스 간의 통신 중 문제가 발생할 경우, 시스템 전체의 장애를 방지하기 위한 패턴. Netflix Hystrix는 이러한 패턴을 구현하는 데 널리 사용되는 도구입니다.
+
+
+- API Gateway: 모든 클라이언트 요청을 단일 진입점으로 받아들여, 요청을 적절한 서비스로 라우팅하는 역할. Spring Cloud Gateway나 Netflix Zuul이 이 역할을 합니다.
+
+
+- 분산 추적 (Distributed Tracing): 마이크로서비스 환경에서의 요청 추적을 도와주는 도구. Spring Cloud Sleuth와 Zipkin이 이를 지원합니다.
+
+
+- 분산 구성 (Distributed Configuration): 마이크로서비스의 구성을 중앙에서 관리하고 동적으로 업데이트할 수 있게 해주는 서비스. Spring Cloud Config Server가 이 역할을 합니다.
+
+
+- 로드 밸런싱: 서비스 인스턴스 간의 트래픽을 균등하게 분배하는 기능. Ribbon과 Spring Cloud LoadBalancer가 이를 지원합니다.
+
+
+- 메시지 기반의 마이크로서비스 통신: 비동기 메시징을 사용하여 마이크로서비스 간의 통신을 지원. Spring Cloud Stream과 Spring Cloud Bus가 이를 지원합니다.
+
+
+- 보안: 마이크로서비스의 보안과 관련된 기능, 예를 들어 OAuth2 기반의 인증 및 권한 부여. Spring Cloud Security가 이를 지원합니다.
+
+</details>

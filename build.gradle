@@ -1,3 +1,6 @@
+/**
+ * 플러그인의 용도는 프로젝트 빌드 및 구성에 추가적인 기능과 동작을 제공
+ */
 plugins {
     id 'java'
     id 'org.springframework.boot' version '2.7.14'
@@ -26,7 +29,24 @@ configurations {
  * Gradle은 Maven 종속성 소스를 크게 의존한다.
  */
 repositories {
+    mavenLocal()
     mavenCentral()
+    maven {
+        url "https://repo.spring.io/release"
+    }
+//    maven { == mavenCentral
+//        url = uri('https://repo1.maven.org/maven2/')
+//    }
+//    maven { == mavenCentral
+//        url = uri('https://repo.maven.apache.org/maven2/')
+//    }
+}
+
+ext {
+//    set('vaadinVersion', "14.10.7")
+
+    // https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-gcp-pubsub/1.2.8.RELEASE
+    set('springCloudGcpVersion', "1.2.5.RELEASE")
 }
 
 dependencies {
@@ -48,7 +68,7 @@ dependencies {
 
     // 비동기 - javaDSL 제공 [ @Scheduled(fixedRate = 5000)  + @EnableScheduling ]
     // testImplementation 'org.awaitility:awaitility:3.1.2'
-    
+
     // 파일 업로드 html 뷰
 //    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
@@ -97,8 +117,29 @@ dependencies {
 
     //
     testImplementation 'org.apache.httpcomponents.client5:httpclient5'
+
+    // vaadin // 24.1.10 버전은 자바11과 호환되지 않음 - 사용하려니 전체 웹팩을 다운받음
+//    implementation 'com.vaadin:vaadin-spring-boot-starter'
+
+    // pub sub
+//    implementation "org.springframework.cloud:spring-cloud-gcp-starter-pubsub"
+//    implementation 'com.google.cloud:spring-cloud-gcp-starter-pubsub' // 이건 다른 블로그
+    implementation "org.springframework.integration:spring-integration-core"
+
+}
+
+
+// Spring Cloud BOM 으로 버전 관리하기
+dependencyManagement {
+//    imports {
+//        mavenBom "com.vaadin:vaadin-bom:${vaadinVersion}"
+//    }
+//    imports {
+//        mavenBom "org.springframework.cloud:spring-cloud-gcp-dependencies:${springCloudGcpVersion}"
+//    }
 }
 
 tasks.named('test') {
     useJUnitPlatform()
 }
+
