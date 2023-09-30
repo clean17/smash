@@ -1,0 +1,18 @@
+# 모든 graphql의 최상위 스키마는 type Query에 지정 - API의 진입점
+# 아래와 같은 언어를 스키마 정의 언어(SDL)라고 함
+type Query {
+    bookById(id: ID): Book
+}
+
+type Book {
+    id: ID
+    name: String
+    pageCount: Int
+    author: Author
+}
+
+type Author {
+    id: ID
+    firstName: String
+    lastName: String
+}

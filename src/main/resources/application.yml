@@ -47,6 +47,33 @@ spring:
     serialization:
       indent_output: true
 
+#  # Apache Cassandra
+#  cassandra:
+#    schema-action: CREATE_IF_NOT_EXISTS
+#    request:
+#      timeout: 10s
+#    connection:
+#      connect-timeout: 10s
+#      init-query-timeout: 10s
+#    local-datacenter: datacenter1
+#    keyspace-name: spring_cassandra
+
+  # graphql
+  graphql:
+    graphiql:
+      enabled: true
+
+# 사전에 Astra 웹페이지에서 DB를 생성.. 또는 docker에서 DB를 만들어야 함
+#astra:
+#  # credential
+#  client-id: testId
+#  client-secret: 1234
+#  application-token: tempToken
+#  # start instance
+#  cloud-region: kor
+#  database-id: testDb
+#  keyspace: spring_cassandra
+
 
 storage:
   location: D:\someDirectory
@@ -72,3 +99,6 @@ cors:
 #  level:
 #    com.netflix.eureka: OFF
 #    com.netflix.discovery: OFF
+
+
+

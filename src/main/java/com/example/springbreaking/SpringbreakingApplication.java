@@ -60,10 +60,10 @@ public class SpringbreakingApplication {
 	 * @return
 	 */
 
-	@Bean
-	public RestTemplate restTemplate(RestTemplateBuilder builder) {
-		return builder.build();
-	}
+//	@Bean
+//	public RestTemplate restTemplate(RestTemplateBuilder builder) {
+//		return builder.build();
+//	}
 
 
    /**
