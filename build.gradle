@@ -146,7 +146,7 @@ dependencies {
     // GraphQL Java Core
     implementation 'org.springframework.boot:spring-boot-starter-graphql'
     testImplementation 'org.springframework.graphql:spring-graphql-test'
-    testImplementation 'org.springframework:spring-webflux'
+//    testImplementation 'org.springframework:spring-webflux'
 
 }
 

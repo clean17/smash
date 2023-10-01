@@ -3087,3 +3087,183 @@ Spring Cloud는 마이크로서비스 아키텍처를 구축, 배포 및 운영�
 - 보안: 마이크로서비스의 보안과 관련된 기능, 예를 들어 OAuth2 기반의 인증 및 권한 부여. Spring Cloud Security가 이를 지원합니다.
 
 </details>
+
+
+
+
+
+<details>
+  <summary>Graphql</summary>
+
+## Graphql
+
+
+GraphQL은 데이터 쿼리 및 조작 언어이며, 또한 서버에서 클라이언트로 데이터를 전송하는 데 사용되는 런타임입니다.<br>
+기존의 REST와의 차이는 REST는 일관적인 데이터를 보여주지만 필요없는 모든 데이터를 반환하는 반면(Over-Fetching) Graphql은 요청한 데이터만 반환하는 대신 추가적인 설정이 필요합니다.
+
+먼저 graphql을 이용하기 위한 의존성을 추가합니다.
+```
+implementation 'org.springframework.boot:spring-boot-starter-graphql'
+```
+사전 작업으로 스키마를 설정해야 합니다.
+
+`resources`디렉토리에 `graphql`디렉토리를 만들고 `schema.graphqls` 파일을 생성합니다.<br>
+스키마를 정의하는 파일의 확장자는 `graphqls`입니다.
+```java
+# 모든 graphql의 최상위 스키마는 type Query에 지정 - API의 진입점
+# 아래와 같은 언어를 스키마 정의 언어(SDL)라고 함
+        
+type Query {
+    bookById(id: ID): Book
+}
+
+type Book {
+    id: ID
+    name: String
+    pageCount: Int
+    author: Author
+}
+
+type Author {
+    id: ID
+    firstName: String
+    lastName: String
+}
+```
+
+DB가 여러 칼럼의 데이터를 반환하더라도 스키마에 설정된 타입의 필드만 매핑되어 객체에 저장됩니다.
+
+컨트롤러를 아래와 같이 만들어 요청을 매핑합니다.<br>
+매핑할 쿼리문과 메소드의 이름을 맞춥니다.<br>
+그리고 응답할 json이 구조를 가진다면 스키마매핑도 이름을 맞춥니다.
+```java
+@Controller
+public class BookController {
+    @QueryMapping
+    public Book bookById(@Argument String id) {
+        return Book.getById(id);
+    }
+
+    @SchemaMapping
+    public Author author(Book book) {
+        return Author.getById(book.getAuthorId());
+    }
+}
+```
+`http://localhost:8080/graphiql?path=/graphql` 에서 쿼리문을 테스트 할 수 있습니다.
+
+
+```gql
+{
+  bookById(id: "book-1") {
+     id
+     name
+     pageCount
+     author {
+       id
+       firstName
+       lastName
+     }
+  }
+}
+```
+그럼 응답되는 json은 스키마에 설정된 데이터를 응답받습니다.
+```json
+{
+  "data": {
+    "bookById": {
+      "id": "book-1",
+      "name": "Effective Java",
+      "pageCount": 416,
+      "author": {
+        "id": "author-1",
+        "firstName": "Joshua",
+        "lastName": "Bloch"
+      }
+    }
+  }
+}
+```
+<br><br>
+
+테스트 URI말고 테스트 의존성으로 테스트 할 수도 있습니다.
+```
+testImplementation 'org.springframework.graphql:spring-graphql-test'
+```
+테스트에 사용될 쿼리는 `resources`디렉토리에 `graphql-test`디렉토리를 만든뒤
+`gql`혹은 `graphql`확장자로 만듭니다
+```gql
+query bookDetails {
+  bookById(id: "book-1") {
+    id
+    name
+    pageCount
+    author {
+      id
+      firstName
+      lastName
+    }
+  }
+}
+```
+
+그리고 아래처럼 테스트 할 수 있습니다.
+주석은 java 15이후입니다.
+```java
+import com.example.springbreaking.graphql.BookController;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
+import org.springframework.graphql.test.tester.GraphQlTester;
+
+/**
+ * graphql 관련 구성만 로드 + 프로젝트의 sdl 참조
+ */
+@GraphQlTest(BookController.class)
+public class BookControllerTests {
+
+    @Autowired
+    private GraphQlTester graphQlTester;
+
+//    @Test
+//    void shouldGetFirstBook() {
+//        this.graphQlTester
+//				.documentName("bookDetails")
+//				.variable("id", "book-1")
+//                .execute()
+//                .path("bookById")
+//                .matchesJson("""
+//                    {
+//                        "id": "book-1",
+//                        "name": "Effective Java",
+//                        "pageCount": 416,
+//                        "author": {
+//                          "firstName": "Joshua",
+//                          "lastName": "Bloch"
+//                        }
+//                    }
+//                """);
+//    }
+
+    @Test
+    void shouldGetFirstBook() {
+        this.graphQlTester
+                .documentName("bookDetails") // 찾으려는 graphql문서
+                .variable("id", "book-1")
+                .execute()
+                .path("bookById")
+                .matchesJson(   "{\n" +
+                        "    \"id\": \"book-1\",\n" +
+                        "    \"name\": \"Effective Java\",\n" +
+                        "    \"pageCount\": 416,\n" +
+                        "    \"author\": {\n" +
+                        "      \"id\": \"author-1\",\n" +
+                        "      \"firstName\": \"Joshua\",\n" +
+                        "      \"lastName\": \"Bloch\"\n" +
+                        "    }\n" +
+                        "}");
+    }
+}
+```
+
+</details>

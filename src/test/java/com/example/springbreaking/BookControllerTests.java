@@ -38,19 +38,19 @@ public class BookControllerTests {
     @Test
     void shouldGetFirstBook() {
         this.graphQlTester
-                .documentName("bookDetails")
+                .documentName("bookDetails") // 찾으려는 graphql문서
                 .variable("id", "book-1")
                 .execute()
                 .path("bookById")
-                .matchesJson("{\n" +
+                .matchesJson(   "{\n" +
                         "    \"id\": \"book-1\",\n" +
                         "    \"name\": \"Effective Java\",\n" +
                         "    \"pageCount\": 416,\n" +
                         "    \"author\": {\n" +
+                        "      \"id\": \"author-1\",\n" +
                         "      \"firstName\": \"Joshua\",\n" +
                         "      \"lastName\": \"Bloch\"\n" +
                         "    }\n" +
                         "}");
     }
-
 }
