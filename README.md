@@ -3053,6 +3053,123 @@ $ curl  http://localhost:8080/people
 ```
 </details>
 
+
+
+
+<details>
+  <summary>R2DBC</summary>
+
+## R2DBC
+
+R2DBC (Reactive Relational Database Connectivity)는 Java로 비동기 데이터베이스 연결을 지원하는 API입니다.<br>
+이는 기존의 JDBC(Java Database Connectivity)와 유사하지만, JDBC가 블로킹 방식의 I/O 작업을 기반으로 한다면, R2DBC는 리액티브 프로그래밍 패러다임을 따르며 논블로킹 방식의 I/O 작업을 지원합니다.<br>
+
+이름에도 알수있듯이 `Reactive` 스트림 사양을 준수하므로 `Publisher`, `Subscriber`, `Subscription` 및 `Processor`와 같은 핵심 리액티브 타입을 사용합니다.
+
+간단히 말해 동시에 DB에 접근해서 블로킹없이 데이터를 가져올 수 있는 장점이 있습니다.<br>
+또한 하나의 스레드가 여러 쿼리문을 동시에 수행할 수 있습니다.<br>
+따라서 서버가 DB 응답을 기다리지 않고 다른 일을 동시에 수행가능합니다.<br>
+또한 Flux같은 반응형 스트림을 통해서 큰 데이터 세트를 분리하여 메모리 부족 문제를 피할 수 있습니다.<br>
+
+
+<br>
+
+먼저 의존성을 추가합니다.
+```
+implementation 'org.springframework.data:spring-data-r2dbc'
+```
+
+H2를 이용해서 간단한 스키마로 테스트해보겠습니다.
+
+먼저 스키마를 정의합니다. `/resources/schema.sql`
+```sql
+-- R2DBC + H2 스키마 // SERIAL : 자동증가
+CREATE TABLE customer (
+      id SERIAL PRIMARY KEY
+    , first_name VARCHAR(255)
+    , last_name VARCHAR(255)
+);
+```
+
+그다음 엔티티를 정의합니다.<br>
+`@Table` 사용<br>
+`import org.springframework.data.relational.core.mapping.Table` 
+```java
+@Table
+public class Customer {
+```
+그리고 R2DBC 레파지토리를 구현합니다.
+```java
+/**
+ * Spring Data 패키지의 reactive 패키지
+ * CRUD기능을 비동기 및 논블로킹 방식으로 수행하도록 지원하는 인터페이스
+ */
+public interface CustomerRepository extends ReactiveCrudRepository<Customer, Long> {
+    /**
+     * r2dbc의 @Query
+     * 해당 메소드의 쿼리를 직접 구성
+     *
+     * Flux<> : Project Reactor의 리액티브 타입 중 하나로 제네릭 타입의 여러 아이템을 순차적 + 비동기적으로 표현
+     * Project Reactor는 Spring 5 및 Spring WebFlux와 함께 도입된 리액티브 프로그래밍 라이브러리입니다.
+     * Reactor는 주로 두 가지 핵심 리액티브 타입, Mono와 Flux,로 구성됩니다.
+     *
+     * Flux<T>: 0개, 1개 또는 그 이상의 아이템을 순차적으로 표현하는 리액티브 스트림입니다.
+     * Mono<T>: 0개 또는 1개의 아이템을 표현하는 리액티브 스트림입니다.
+     *
+     * @param lastName
+     * @return
+     */
+    @Query("SELECT * FROM customer WHERE last_name = :lastname")
+    Flux<Customer> findByLastName(String lastName);
+
+}
+```
+애플리케이션 실행 시 간단한 테스트입니다.
+```java
+@Bean
+    public CommandLineRunner demo(CustomerRepository repository) {
+
+        return (args) -> {
+            // save a few customers
+            repository.saveAll(Arrays.asList(new Customer("Jack", "Bauer"),
+                new Customer("Chloe", "O'Brian"),
+                new Customer("Kim", "Bauer"),
+                new Customer("David", "Palmer"),
+                new Customer("Michelle", "Dessler")))
+                .blockLast(Duration.ofSeconds(10));
+
+            // fetch all customers
+            log.info("Customers found with findAll():");
+            log.info("-------------------------------");
+            repository.findAll().doOnNext(customer -> {
+                log.info(customer.toString());
+            }).blockLast(Duration.ofSeconds(10));
+
+            log.info("");
+
+            // fetch an individual customer by ID
+			repository.findById(1L).doOnNext(customer -> {
+				log.info("Customer found with findById(1L):");
+				log.info("--------------------------------");
+				log.info(customer.toString());
+				log.info("");
+			}).block(Duration.ofSeconds(10));
+
+
+            // fetch customers by last name
+            log.info("Customer found with findByLastName('Bauer'):");
+            log.info("--------------------------------------------");
+            repository.findByLastName("Bauer").doOnNext(bauer -> {
+                log.info(bauer.toString());
+            }).blockLast(Duration.ofSeconds(10));;
+            log.info("");
+        };
+    }
+```
+
+</details>
+
+
 <details>
   <summary>Spring Cloud</summary>
 

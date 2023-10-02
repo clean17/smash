@@ -131,6 +131,14 @@ dependencies {
 //    // DataStax Astra DB Cassandra-as-a-Service
 //    implementation 'com.datastax.astra:astra-spring-boot-starter:0.1.13'
 
+
+    // R2DBC
+    implementation 'org.springframework.data:spring-data-r2dbc'
+    // implementation 'io.r2dbc:r2dbc-postgresql:0.8.6.RELEASE' // 예를들어 PostreSql과 함께 사용한다면
+    runtimeOnly 'io.r2dbc:r2dbc-h2' // h2 이용시
+    testImplementation 'io.projectreactor:reactor-test'
+
+
     /**
      * Docker + Cassandra 컨테이너 실행
      * docker run -p 9042:9042 --rm --name cassandra -d cassandra:4.0.7
