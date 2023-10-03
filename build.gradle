@@ -156,6 +156,11 @@ dependencies {
     testImplementation 'org.springframework.graphql:spring-graphql-test'
 //    testImplementation 'org.springframework:spring-webflux'
 
+    // Reactive Web
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+
 }
 
 

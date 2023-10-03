@@ -3053,7 +3053,35 @@ $ curl  http://localhost:8080/people
 ```
 </details>
 
+<details>
+  <summary>Reactive Web</summary>
 
+## Reactive Web
+
+Reactive Web은 데이터 흐름과 전파의 변화에 반응하여 동작하는 웹 애플리케이션 개발에 관한 패러다임입니다.
+<br> Reactive Web의 핵심 개념은 다음과 같습니다
+
+> - 비동기 및 Non-blocking<br>
+전통적인 웹 애플리케이션에서는 요청을 처리하는 동안 스레드가 차단될 수 있습니다. 반면, Reactive Web에서는 연산이 완료될 때까지 기다리는 대신 비동기적으로 실행되기 때문에 스레드는 차단되지 않습니다.
+
+> - 데이터 흐름의 반응<br>
+    Reactive 프로그래밍은 데이터 흐름과 그 데이터 흐름에서 발생하는 변경에 반응하는 것에 중점을 둡니다. 이러한 방식으로, 데이터가 변경되면 연관된 컴포넌트나 로직이 자동으로 업데이트 됩니다.
+
+> - Backpressure<br>
+    Backpressure는 시스템이 과부하 상태에 직면했을 때, 이를 제어하고 관리하는 메커니즘입니다. 예를 들어, 빠른 속도로 데이터를 생성하는 프로듀서와 느린 속도로 데이터를 처리하는 컨슈머 사이에서 발생할 수 있는 문제를 해결하기 위해 사용됩니다.
+
+> - Reactive Streams<br>
+    Reactive Streams는 비동기 스트림 처리를 위한 표준입니다. 이 표준은 Publisher, Subscriber, Subscription 및 Processor 네 가지 인터페이스로 구성되어 있습니다. 이를 통해 데이터의 비동기 스트림을 처리하고 backpressure를 관리합니다.
+
+Spring WebFlux는 Spring Framework에서 제공하는 Reactive Web 프로그래밍 모델의 구현체입니다.<br>
+전통적인 Spring MVC와는 다르게, WebFlux는 비동기 및 non-blocking 웹 애플리케이션 개발을 위해 설계되었습니다.<br>
+WebFlux는 내부적으로 Reactor 프레임워크를 사용하여 reactive programming을 지원합니다.<br>
+Reactive Web의 주요 장점은 고성능과 확장성입니다. 특히 동시에 많은 연결이나 데이터를 처리해야 하는 대규모 웹 애플리케이션에 적합합니다.
+
+
+
+
+</details>
 
 
 <details>
