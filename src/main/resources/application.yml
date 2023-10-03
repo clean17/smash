@@ -17,7 +17,12 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  # 적용할 스키마 수동 설정
+  sql:
+    init:
+      schema-locations: classpath:schema-all.sql
 
+      
   ldap: # 스프링부트의 임베디드 LDAP서버 설정 - 내부 개발 목적 ( 시큐리티 )
     embedded:
       ldif: classpath:test-server.ldif # 리소스 디렉토리
@@ -63,6 +68,7 @@ spring:
     graphiql:
       enabled: true
 
+
 # 사전에 Astra 웹페이지에서 DB를 생성.. 또는 docker에서 DB를 만들어야 함
 #astra:
 #  # credential
@@ -100,9 +106,9 @@ logging:
     com.netflix.eureka: OFF
     com.netflix.discovery: OFF
   # 모든 빈 출력
-#    org:
-#      springframework:
-#        beans: DEBUG
+    org:
+      springframework:
+        beans: DEBUG
 
 # actuator 엔드포인트 활성화 - 빈 확인
 management:

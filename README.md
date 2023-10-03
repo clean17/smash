@@ -3062,7 +3062,7 @@ Reactive Web은 데이터 흐름과 전파의 변화에 반응하여 동작하�
 <br> Reactive Web의 핵심 개념은 다음과 같습니다
 
 > - 비동기 및 Non-blocking<br>
-전통적인 웹 애플리케이션에서는 요청을 처리하는 동안 스레드가 차단될 수 있습니다. 반면, Reactive Web에서는 연산이 완료될 때까지 기다리는 대신 비동기적으로 실행되기 때문에 스레드는 차단되지 않습니다.
+    전통적인 웹 애플리케이션에서는 요청을 처리하는 동안 스레드가 차단될 수 있습니다. 반면, Reactive Web에서는 연산이 완료될 때까지 기다리는 대신 비동기적으로 실행되기 때문에 스레드는 차단되지 않습니다.
 
 > - 데이터 흐름의 반응<br>
     Reactive 프로그래밍은 데이터 흐름과 그 데이터 흐름에서 발생하는 변경에 반응하는 것에 중점을 둡니다. 이러한 방식으로, 데이터가 변경되면 연관된 컴포넌트나 로직이 자동으로 업데이트 됩니다.
@@ -3078,6 +3078,27 @@ Spring WebFlux는 Spring Framework에서 제공하는 Reactive Web 프로그래�
 WebFlux는 내부적으로 Reactor 프레임워크를 사용하여 reactive programming을 지원합니다.<br>
 Reactive Web의 주요 장점은 고성능과 확장성입니다. 특히 동시에 많은 연결이나 데이터를 처리해야 하는 대규모 웹 애플리케이션에 적합합니다.
 
+먼저 의존성을 추가합니다.
+```
+implementation 'org.springframework.boot:spring-boot-starter-webflux'
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+testImplementation 'io.projectreactor:reactor-test'
+```
+여기서 주의할 점은 Spring WebFlux 애플리케이션을 위한 스타터를 사용할 시에는 동기적인 통신을 하는 의존성과 함께 사용할 수 없습니다.<br>
+아래의 의존성들은 WebFlux와 함께 사용할 수 없거나 WebFlux와 함께 사용하는 설정을 사용해야 합니다.
+
+
+스프링부트 스타터 웹은 내장 톰캣을 사용하지만 WebFlux는 Netty를 사용합니다.(서블릿 vs 리액티브)<br>
+```
+implementation 'org.springframework.boot:spring-boot-starter-web'
+implementation 'org.springframework.boot:spring-boot-starter-websocket'
+implementation 'org.springframework.boot:spring-boot-starter-security'
+```
+또한 JPA는 동기적인 요청을 하므로 R2DBC 의존성을 사용해야 합니다.
+```
+implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+```
 
 
 
@@ -3105,6 +3126,11 @@ R2DBC (Reactive Relational Database Connectivity)는 Java로 비동기 데이터
 먼저 의존성을 추가합니다.
 ```
 implementation 'org.springframework.data:spring-data-r2dbc'
+```
+R2DBC는 비동기적은 요청을 하므로 아래의 의존성과 함께 사용하지 않습니다.
+```
+implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 ```
 
 H2를 이용해서 간단한 스키마로 테스트해보겠습니다.

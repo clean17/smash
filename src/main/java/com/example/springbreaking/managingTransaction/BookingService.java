@@ -13,6 +13,7 @@ import java.util.List;
 @Slf4j
 public class BookingService {
 
+  // JdbcTemplate 은  Spring의 spring-jdbc 모듈에 포함되어 있습니다.
   private final JdbcTemplate jdbcTemplate;
 
   /**

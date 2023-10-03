@@ -1,4 +1,4 @@
-package com.example.springbreaking.reativeWeb;
+package com.example.springbreaking.reactiveWeb;
 
 
 import lombok.AllArgsConstructor;

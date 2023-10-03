@@ -3,12 +3,13 @@ package com.example.springbreaking.managingTransaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 @RequiredArgsConstructor
-//@Component
+@Component
 @Slf4j
-class AppRunner implements CommandLineRunner {
+class AppRunnerJDBC implements CommandLineRunner {
 
   private final BookingService bookingService;
 
