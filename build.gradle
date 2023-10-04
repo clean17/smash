@@ -66,6 +66,9 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     implementation 'org.slf4j:slf4j-api'
 
+    // mybatis
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.2.2'
+
 
     // 비동기 - javaDSL 제공 [ @Scheduled(fixedRate = 5000)  + @EnableScheduling ]
     // testImplementation 'org.awaitility:awaitility:3.1.2'
