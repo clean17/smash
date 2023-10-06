@@ -106,9 +106,9 @@ logging:
     com.netflix.eureka: OFF
     com.netflix.discovery: OFF
   # 모든 빈 출력
-    org:
-      springframework:
-        beans: DEBUG
+#    org:
+#      springframework:
+#        beans: DEBUG
 
 # actuator 엔드포인트 활성화 - 빈 확인
 management:
