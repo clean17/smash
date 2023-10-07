@@ -1,7 +1,7 @@
 package com.example.springbreaking;
 
-import com.example.springbreaking.uploadingfiles.exception.StorageFileNotFoundException;
-import com.example.springbreaking.uploadingfiles.storage.StorageService;
+import com.example.springbreaking.servlet.uploadingfiles.exception.StorageFileNotFoundException;
+import com.example.springbreaking.servlet.uploadingfiles.storage.StorageService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

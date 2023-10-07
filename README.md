@@ -1379,16 +1379,16 @@ Spring MVC의 구성을 사용자 정의하기 위한 주요 방법 중 하나�
 </details>
 
 <details>
-  <summary> 타임리프 에러처리 </summary>
+  <summary> Thymeleaf </summary>
 
-## 타임리프 에러처리
+## 에러처리
 
 `<td th:if="${#fields.hasErrors('name')}" >Name Error</td>` 이렇게 작성하면<br>
 유효성 검사를 통과하지 못하면 `Name Error`가 화면에 표시된다.<br>
 `<td th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name Error</td>`<br>
 위처럼 한다면 `validation` 에서 설정된 조건으로 통과하지 못한 유효성을 화면에 표시해준다.
 
-```java
+```html
 <form action="#" th:action="@{/}" th:object="${personForm}" method="post">
     <table>
         <tr>
@@ -1408,6 +1408,34 @@ Spring MVC의 구성을 사용자 정의하기 위한 주요 방법 중 하나�
 </form>
 ```
 ![img.png](img.png)
+
+## Form 전송
+
+> <Thymeleaf th 접두어><br>
+th:text: HTML 태그의 텍스트 내용을 동적으로 설정합니다.<br>
+th:value: input 필드의 값을 동적으로 설정합니다.<br>
+th:each: 반복문을 사용하여 리스트나 배열의 항목을 순회합니다.<br>
+th:if, th:unless: 조건문을 사용하여 특정 조건에 따라 태그를 렌더링하거나 숨깁니다.<br>
+th:attr: 태그의 속성 값을 동적으로 설정합니다.<br>
+th:action: 양식(form)의 action 속성 값을 동적으로 설정합니다.<br>
+
+```html
+<!DOCTYPE HTML>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title>Getting Started: Handling Form Submission</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+<h1>Form</h1>
+<form action="#" th:action="@{/greeting}" th:object="${greeting}" method="post">
+    <p>Id: <input type="text" th:field="*{id}" /></p>
+    <p>Message: <input type="text" th:field="*{content}" /></p>
+    <p><input type="submit" value="Submit" /> <input type="reset" value="Reset" /></p>
+</form>
+</body>
+</html>
+```
 
 </details>
 
@@ -2107,7 +2135,7 @@ public String createUser(@ModelAttribute User user, Model model) {
 </details>
 
 <details>
-  <summary> spring-boot-starter-test</summary>
+  <summary> 테스트 spring-boot-starter-test </summary>
 
 ## spring-boot-starter-test
 
@@ -2119,44 +2147,54 @@ testImplementation 'org.springframework.boot:spring-boot-starter-test'
 간단한 테스트 방법으로는 아래와 같은 방법들을 사용합니다.
 ```java
 /**
- * @SpringBootTest(classes = [실행하려는 애플리케이션 이름].class)
- *
  * 웹 요청을 테스트하는 첫번째 방법
+ * 
+ * @SpringBootTest(classes = [실행하려는 애플리케이션 이름].class)
  */
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc // MockMvc 환경 자동 구성
 public class HelloControllerTest {
 
-	@Autowired
-	private MockMvc mvc;
+    /**
+     * MockMvc를 주입받기 위해서는 @AutoConfigureMockMvc가 필요합니다.
+     */
+    @Autowired
+    private MockMvc mockMvc;
 
-	@Test
-	public void getHello() throws Exception {
-		mvc.perform(MockMvcRequestBuilders.get("/").accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(content().string(equalTo("Greetings from Spring Boot!")));
-	}
+    @Test
+    public void getHello() throws Exception {
+      mockMvc.perform(MockMvcRequestBuilders.get("/").accept(MediaType.APPLICATION_JSON))
+              .andExpect(status().isOk())
+              .andExpect(content().string(equalTo("Greetings from Spring Boot!")));
+    }
 }
 ```
 
 ```java
 /**
- * 랜덤포트로 실행시켜서 충돌을 방지, 여러 테스트를 동시에 진행할때 사용한다.
- * 테스트의 독립성을 확보
- * RANDOM_PORT 를 사용하면  TestRestTemplate 또는 WebTestClient 도구를 이용해 HTTP 호출을 테스트할 수 있습니다.
- * 
  * 웹 요청을 테스트하는 두번째 방법
+ * 
+ * RANDOM_PORT 사용
+ * 충돌을 방지, 여러 테스트를 동시에 진행, 테스트의 독립성을 확보
+ * RANDOM_PORT를 사용하면  TestRestTemplate 또는 WebTestClient 도구를 이용해 HTTP 호출을 테스트할 수 있습니다.
  */
 @SpringBootTest(classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class HelloControllerIT {
 
-	@Autowired
-	private TestRestTemplate template;
+    /**
+     * 테스트 환경에서 RANDOM_PORT or DEFINED_PORT가 설정되어 있지 않다면 local.server.port 속성은 존재하지 않는다.
+     */
+    @Value(value="${local.server.port}")
+    private int port;
+
+    // TestRestTemplate도 RANDOM_PORT가 필요
+    @Autowired
+    private TestRestTemplate restTemplate;
 
     @Test
-    public void getHello() throws Exception {
-        ResponseEntity<String> response = template.getForEntity("/", String.class);
-        assertThat(response.getBody()).isEqualTo("Greetings from Spring Boot!");
+    public void greetingShouldReturnDefaultMessage() throws Exception {
+      assertThat(this.restTemplate.getForObject("http://localhost:" + port + "/",
+              String.class)).contains("Greetings from Spring Boot!");
     }
 }
 ```
@@ -2196,6 +2234,59 @@ public void testWithCsrf() throws Exception {
 ```
 
 그냥 귀찮으니 개발할때 `.csrf.disable()` 하는것도 좋은 방법일지도..
+
+## WebMockTest
+
+실제 서버를 실행시키지 않고 동작을 Mock테스트할 수 있습니다.
+
+```java
+import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.example.springbreaking.servlet.testingWeb.TestGreetingController;
+import com.example.springbreaking.servlet.testingWeb.TestGreetingService;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+/**
+ * @WebMvcTest : 스프링 부트 테스트 프레임워크에서 제공하는 웹 계층만을 테스트하기 위한 어노테이션입니다.
+ * MockMvc 인스턴스를 자동으로 제공하여 실제 서버를 실행시키지 않고 MVC프레임워크 동작을 Mock할 수 있습니다.
+ * 그러므로 RANDOM_PORT를 설정할 필요가 없습니다.
+ * @WebMvcTest를 사용할 때는 컨트롤러를 주입합니다.
+ */
+@WebMvcTest(TestGreetingController.class)
+public class WebMockTest {
+
+	/**
+	 * Mockito를 이용한 Mock테스트
+	 */
+	@Autowired
+	private MockMvc mockMvc;
+
+	@MockBean
+	private TestGreetingService service;
+
+
+	@Test
+	public void greetingShouldReturnMessageFromService() throws Exception {
+		when(service.greet()).thenReturn("Hello, Mock");
+		mockMvc.perform(get("/testingWeb"))
+				.andDo(print())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(content().string(containsString("Hello, Mock")));
+	}
+}
+```
 
 </details>
 
@@ -3260,7 +3351,7 @@ Spring Cloud는 마이크로서비스 아키텍처를 구축, 배포 및 운영�
 
 - 보안: 마이크로서비스의 보안과 관련된 기능, 예를 들어 OAuth2 기반의 인증 및 권한 부여. Spring Cloud Security가 이를 지원합니다.
 
-## Spring Clout Gateway
+## Spring Cloud Gateway
 
 Spring Cloud Gateway는  Spring Cloud 프로젝트의 일부로, 마이크로서비스 아키텍처에서 API 게이트웨이 역할을 하는 애플리케이션을 구축하기 위한 라이브러리입니다.<br>
 API 게이트웨이는 마이크로서비스의 진입점 역할을 하며, 클라이언트 요청을 적절한 서비스로 라우팅하는 역할을 합니다.
@@ -3344,8 +3435,27 @@ spring-boot-starter-web을 명시적으로 제외 (서블릿 기반)<br>
 
  서킷 브레이커 패턴은 복잡한 분산 시스템에서 중요한 역할을 합니다. 외부 서비스가 실패할 때 전체 시스템이 오류로 인해 중단되는 것을 방지하기 위한 것입니다. Spring Cloud에서는 Resilience4J, Hystrix 등의 라이브러리를 통해 서킷 브레이커 기능을 쉽게 사용할 수 있습니다.
 
+> 서킷브레이커를 사용하는 이유
 
-- gateway 설정 클래스입니다.
+
+- 시스템의 복원력 향상: 외부 서비스나 다른 시스템과의 통신에서 오류나 지연이 발생할 경우, 이 오류가 전체 시스템에 더 큰 문제를 일으키는 것을 방지하기 위함입니다.
+
+
+- 빠른 실패: 장애가 발생한 서비스에 계속해서 요청을 보내는 것은 불필요한 자원 낭비를 초래하고, 응답 시간도 길어질 수 있습니다. 서킷 브레이커는 문제가 발생한 서비스로의 요청을 일시적으로 차단함으로써 빠르게 실패하는 행동을 취합니다.
+
+
+- 자동 복구: 서킷 브레이커는 일정 시간 후에 자동으로 문제가 발생한 서비스의 상태를 확인하려고 시도합니다. 만약 서비스가 정상적으로 동작한다면, 서킷 브레이커는 다시 닫혀서 요청을 허용합니다.
+
+
+- 장애 격리: 특정 서비스에서의 장애가 전체 시스템에 영향을 미치는 것을 방지합니다. 이를 통해 장애가 발생한 서비스 외의 부분은 정상적으로 동작할 수 있습니다.
+
+
+- 보다 나은 사용자 경험: 서킷 브레이커는 문제가 발생한 서비스에 대한 요청을 차단함으로써 사용자에게 빠른 오류 응답을 제공할 수 있습니다. 이를 통해 사용자는 시스템의 현재 상태에 대한 피드백을 빠르게 받게 됩니다.
+
+
+- 폭주 상황 방지: 문제가 발생한 서비스에 계속해서 요청이 전송되면, 해당 서비스는 복구하기 어려운 상황으로 진입할 수 있습니다. 서킷 브레이커는 이러한 폭주 상황을 방지하고, 서비스가 복구될 기회를 제공합니다.
+
+> gateway 설정
 ```java
     @Bean
     public RouteLocator myRoutes(RouteLocatorBuilder builder) {

@@ -11,9 +11,7 @@ group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
 /**
- * 황당하지만
- *
- * java 로 감싸지 않으면 갑자기 gradle이 실행이 안됨 - 2023.09.16
+ * java {} 로 감싸지 않으면 gradle이 실행이 안됨 - 2023.09.16
  */
 java {
     sourceCompatibility = '11'
@@ -34,49 +32,38 @@ repositories {
     maven {
         url "https://repo.spring.io/release"
     }
-//    maven { == mavenCentral
+//    maven { == mavenCentral과 같다
 //        url = uri('https://repo1.maven.org/maven2/')
 //    }
-//    maven { == mavenCentral
+//    maven { == mavenCentral과 같다
 //        url = uri('https://repo.maven.apache.org/maven2/')
 //    }
 }
 
+/**
+ * 변수 설정
+ */
 ext {
-//    set('vaadinVersion', "14.10.7")
+    set('vaadinVersion', "14.10.7")
 
+    // gcp-pubsub
     // https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-gcp-pubsub/1.2.8.RELEASE
     set('springCloudGcpVersion', "1.2.5.RELEASE")
     set('springCloudVersion', "2021.0.3")
 }
 
 dependencies {
-    // @RepositoryRestResource 을 사용한 repository를 자동으로 RESTful서비스로 만들어 줌
-    // -> CRUD 연산을 위한 REST API 엔드포인트가 자동으로 생성
-    // -> HAL 형식 지원 ( HATEOAS 원칙을 구현하기 위한 표현 형식 )
-//    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
-//    implementation 'org.springframework.boot:spring-boot-starter-websocket'
-//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-//    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-//    implementation 'org.springframework.boot:spring-boot-starter-web'
+    /********************************* 스프링 부트 편의를 위한 의존성 *******************************************/
 
+    implementation 'org.springframework.boot:spring-boot-starter-web' // Spring Mvc - Reactive와 함께 사용 불가
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.slf4j:slf4j-api' // 로깅
     testImplementation 'org.springframework.boot:spring-boot-starter-test' // 단위 테스트
-    runtimeOnly 'com.h2database:h2'
-    implementation 'org.slf4j:slf4j-api'
 
-    // mybatis
-    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.2.2'
-
-
-    // 비동기 - javaDSL 제공 [ @Scheduled(fixedRate = 5000)  + @EnableScheduling ]
-    // testImplementation 'org.awaitility:awaitility:3.1.2'
-
-    // 파일 업로드 html 뷰
-//    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    /************************************ Spring Security ***********************************************/
 
 /*    // 시큐리티 + ldap
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -86,58 +73,71 @@ dependencies {
     implementation 'org.springframework.security:spring-security-ldap'
     implementation 'com.unboundid:unboundid-ldapsdk'*/
 
-    // Redis
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+/*    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    // Thymeleaf + Security 통합
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6:3.1.1.RELEASE'
+    implementation 'org.springframework.security:spring-security-test'*/
+
+    /*********************************** 기능 추가 *********************************************************/
+
+    // 비동기 - javaDSL(Domain Specific Language) 제공 [ @Scheduled(fixedRate = 5000)  + @EnableScheduling ]
+    // await().atMost(5, SECONDS).until(() -> someAsynchronousOperationIsComplete());
+     testImplementation 'org.awaitility:awaitility:3.1.2' // 주로 테스트를 위한 라이브러리
+
+    // Websocket
+//    implementation 'org.springframework.boot:spring-boot-starter-websocket' // Reactive와 함께 사용 불가
+
+    // GraphQL Java Core
+    implementation 'org.springframework.boot:spring-boot-starter-graphql'
+    testImplementation 'org.springframework.graphql:spring-graphql-test'
+//    testImplementation 'org.springframework:spring-webflux'
 
     // RabbitMQ
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
-    // validated
+    // Validated
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // actuator
+    // Actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    // spring batch
+    // Spring Batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
 //    runtimeOnly 'org.hsqldb:hsqldb' // H2DB 는 주석처리 필요
-
-/*    // security
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    // thymeleaf + security 통합
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6:3.1.1.RELEASE'
-    implementation 'org.springframework.security:spring-security-test'*/
-
-    // jsp
-    // providedCompile -> 컴파일에 필요, 실행시는 제공됨 // compileOnly 를 권장
-    // implementation -> 종속성이 실행 클래스, 컴파일 클래스에 추가됨. 실행 시 사용됨
-    implementation 'javax.servlet:jstl'
-    implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
-//    compileOnly 'org.apache.tomcat.embed:tomcat-embed-jasper'
 
     // Hateoas
 //     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
 
-    // Postgresql
-//    implementation 'org.postgresql:postgresql'
+    /************************************ View *******************************************************/
 
-    //
-    testImplementation 'org.apache.httpcomponents.client5:httpclient5'
+/*    // Vaadin // 24.1.10 버전은 자바11과 호환되지 않음 - 사용하려니 전체 웹팩을 다운받음
+    implementation 'com.vaadin:vaadin-spring-boot-starter'*/
 
-    // vaadin // 24.1.10 버전은 자바11과 호환되지 않음 - 사용하려니 전체 웹팩을 다운받음
-//    implementation 'com.vaadin:vaadin-spring-boot-starter'
+    // thymeleaf
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
-    // pub sub
-//    implementation "org.springframework.cloud:spring-cloud-gcp-starter-pubsub"
-//    implementation 'com.google.cloud:spring-cloud-gcp-starter-pubsub' // 이건 다른 블로그
-//    implementation "org.springframework.integration:spring-integration-core"
+    /************************* Spring Data ( Reactive 와 함께 사용 불가 )********************************/
 
-//    // Spring Data Cassandra
-//    implementation 'org.springframework.boot:spring-boot-starter-data-cassandra'
-//    // DataStax Astra DB Cassandra-as-a-Service
-//    implementation 'com.datastax.astra:astra-spring-boot-starter:0.1.13'
+    /*     <spring-boot-starter-data-rest 의존성>
+     @RepositoryRestResource를 사용한 repository를 자동으로 RESTful서비스로 만들어 줌
+     -> CRUD 연산을 위한 REST API 엔드포인트가 자동으로 생성  ex) CURDRepository<Book, Long> -> /books 'GET','POST'등..
+     -> HAL 형식 지원 ( HATEOAS 원칙을 구현하기 위한 표현 형식 )*/
+    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
 
+    // Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // Jpa
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // JDBC
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
+/*    // Spring Data Cassandra - yml 설정 필요
+    implementation 'org.springframework.boot:spring-boot-starter-data-cassandra'
+    // DataStax Astra DB Cassandra-as-a-Service
+    implementation 'com.datastax.astra:astra-spring-boot-starter:0.1.13'*/
     /**
      * Docker + Cassandra 컨테이너 실행
      * docker run -p 9042:9042 --rm --name cassandra -d cassandra:4.0.7
@@ -150,37 +150,56 @@ dependencies {
      *
      */
 
-    // GraphQL Java Core
-    implementation 'org.springframework.boot:spring-boot-starter-graphql'
-    testImplementation 'org.springframework.graphql:spring-graphql-test'
-//    testImplementation 'org.springframework:spring-webflux'
+    /************************************ DB **********************************************************/
 
-/************************************ Reactive ***********************************************/
+    runtimeOnly 'com.h2database:h2'
 
-    // Spring Reactive Web 의존성
-//    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    // Spring Data Reactive Redis 의존성
-//    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+    // Postgresql
+//    implementation 'org.postgresql:postgresql'
 
-    // Reactive Web - 리액티브 의존성은 서블릿 의존성과 함께 사용 x , 내장 톰캣 vs Netty
-//    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-//    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-//    testImplementation 'io.projectreactor:reactor-test'
+    /************************************ Reactive ****************************************************/
 
-    // R2DBC - 서블릿과 함께 사용 가능 하지만 보통 webflux와 함께 사용 // JdbcTemplate 는 자동 구성되지 않음
-//    implementation 'org.springframework.data:spring-data-r2dbc'
-    // implementation 'io.r2dbc:r2dbc-postgresql:0.8.6.RELEASE' // 예를들어 PostreSql과 함께 사용한다면
-//    runtimeOnly 'io.r2dbc:r2dbc-h2' // h2 이용시
-//    testImplementation 'io.projectreactor:reactor-test'
+    // starter-web 의존성과 같이 사용할 수 없으므로 매핑을 위한 어노테이션은 아래 의존성으로 해결
+//    implementation 'org.springframework:spring-webflux:5.3.9.RELEASE'
 
-    // Spring Cloud Gateway - 내부적으로 Spring WebFlux를 의존함
+/*    // Spring Reactive Web 기본 의존성 - Servlet 의존성과 함께 사용 x , 내장 톰캣 vs Netty
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'*/
+
+/*    // Spring Data Reactive Redis 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'*/
+
+/*    // R2DBC - 서블릿과 함께 사용 가능 하지만 보통 webflux와 함께 사용 // JdbcTemplate 는 자동 구성되지 않음
+    implementation 'org.springframework.data:spring-data-r2dbc'
+    // implementation 'io.r2dbc:r2dbc-postgresql:0.8.6.RELEASE' // R2DBC + PostreSql 사용한다면
+    runtimeOnly 'io.r2dbc:r2dbc-h2' // R2DBC + h2 이용시*/
+
+/*    // Spring Cloud Gateway - 내부적으로 Spring WebFlux를 의존함
     implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
     // CircuitBreaker - 반응형 서킷브레이커
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
-    // spring-boot-starter-web을 명시적으로 제외 (서블릿 기반)
+    // spring-boot-starter-web을 명시적으로 제외한 방법 (서블릿 기반)
     implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner"){
         exclude group: "org.springframework.boot", module: "spring-boot-starter-web"
-    }
+    }*/
+
+    /************************************ 전자정부 프레임워크 *******************************************/
+
+    // Jsp
+    // implementation -> 종속성이 실행 클래스, 컴파일 클래스에 추가됨. 실행 시 사용됨
+    implementation 'javax.servlet:jstl'
+    implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    // Mybatis
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.2.2'
+
+    /************************************ 비 분류 ***********************************************/
+
+    // Pub Sub
+//    implementation "org.springframework.cloud:spring-cloud-gcp-starter-pubsub"
+//    implementation 'com.google.cloud:spring-cloud-gcp-starter-pubsub' // 이건 다른 블로그
+//    implementation "org.springframework.integration:spring-integration-core"
+
 }
 
 
