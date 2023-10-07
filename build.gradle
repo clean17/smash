@@ -47,17 +47,18 @@ ext {
 
     // https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-gcp-pubsub/1.2.8.RELEASE
     set('springCloudGcpVersion', "1.2.5.RELEASE")
+    set('springCloudVersion', "2021.0.3")
 }
 
 dependencies {
     // @RepositoryRestResource 을 사용한 repository를 자동으로 RESTful서비스로 만들어 줌
     // -> CRUD 연산을 위한 REST API 엔드포인트가 자동으로 생성
     // -> HAL 형식 지원 ( HATEOAS 원칙을 구현하기 위한 표현 형식 )
-    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+//    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+//    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+//    implementation 'org.springframework.boot:spring-boot-starter-web'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -172,6 +173,14 @@ dependencies {
 //    runtimeOnly 'io.r2dbc:r2dbc-h2' // h2 이용시
 //    testImplementation 'io.projectreactor:reactor-test'
 
+    // Spring Cloud Gateway - 내부적으로 Spring WebFlux를 의존함
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    // CircuitBreaker - 반응형 서킷브레이커
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+    // spring-boot-starter-web을 명시적으로 제외 (서블릿 기반)
+    implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner"){
+        exclude group: "org.springframework.boot", module: "spring-boot-starter-web"
+    }
 }
 
 
@@ -183,6 +192,9 @@ dependencyManagement {
 //    imports {
 //        mavenBom "org.springframework.cloud:spring-cloud-gcp-dependencies:${springCloudGcpVersion}"
 //    }
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
 }
 
 tasks.named('test') {

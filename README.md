@@ -3054,9 +3054,9 @@ $ curl  http://localhost:8080/people
 </details>
 
 <details>
-  <summary>Reactive Web</summary>
+  <summary>Reactive Web / WebFlux</summary>
 
-## Reactive Web
+## Reactive Web 
 
 Reactive Web은 데이터 흐름과 전파의 변화에 반응하여 동작하는 웹 애플리케이션 개발에 관한 패러다임입니다.
 <br> Reactive Web의 핵심 개념은 다음과 같습니다
@@ -3072,6 +3072,9 @@ Reactive Web은 데이터 흐름과 전파의 변화에 반응하여 동작하�
 
 > - Reactive Streams<br>
     Reactive Streams는 비동기 스트림 처리를 위한 표준입니다. 이 표준은 Publisher, Subscriber, Subscription 및 Processor 네 가지 인터페이스로 구성되어 있습니다. 이를 통해 데이터의 비동기 스트림을 처리하고 backpressure를 관리합니다.
+
+
+## WebFlux
 
 Spring WebFlux는 Spring Framework에서 제공하는 Reactive Web 프로그래밍 모델의 구현체입니다.<br>
 전통적인 Spring MVC와는 다르게, WebFlux는 비동기 및 non-blocking 웹 애플리케이션 개발을 위해 설계되었습니다.<br>
@@ -3256,6 +3259,250 @@ Spring Cloud는 마이크로서비스 아키텍처를 구축, 배포 및 운영�
 
 
 - 보안: 마이크로서비스의 보안과 관련된 기능, 예를 들어 OAuth2 기반의 인증 및 권한 부여. Spring Cloud Security가 이를 지원합니다.
+
+## Spring Clout Gateway
+
+Spring Cloud Gateway는  Spring Cloud 프로젝트의 일부로, 마이크로서비스 아키텍처에서 API 게이트웨이 역할을 하는 애플리케이션을 구축하기 위한 라이브러리입니다.<br>
+API 게이트웨이는 마이크로서비스의 진입점 역할을 하며, 클라이언트 요청을 적절한 서비스로 라우팅하는 역할을 합니다.
+
+> Spring Cloud Gateway의 기능
+
+- 경로 기반 라우팅: 특정 경로나 도메인으로 들어오는 요청을 대상 서비스로 라우팅합니다.
+
+
+- 필터: 요청이나 응답에 대해 가공이나 수정을 할 수 있습니다. 예를 들어, 요청 헤더를 추가/제거하거나 응답 내용을 변경하는 것이 가능합니다.
+
+
+- 서킷 브레이커 통합: 서비스 호출에 문제가 생겼을 때, 서킷 브레이커 패턴을 이용해 시스템의 장애 전파를 방지합니다.
+
+
+- 보안: 인증 및 권한 부여와 같은 보안 기능을 지원합니다.
+
+
+- 비동기 및 논블로킹: Spring Cloud Gateway는 Netty를 기반으로 하며, 비동기 및 논블로킹 작업을 지원합니다. 이는 높은 동시성 및 성능을 보장합니다.
+
+
+- 쉬운 확장성: 사용자 정의 필터나 리스너를 통해 확장성이 높습니다.
+
+> 게이트 웨이란 ?
+
+ 웹 애플리케이션 아키텍처나 마이크로서비스 아키텍처에서 사용자의 요청을 적절한 서버나 서비스로 라우팅하는 중간 역할을 하는 컴포넌트를 지칭합니다.
+
+특징:
+
+- 라우팅(Routing): 게이트웨이는 들어오는 요청을 적절한 목적지로 라우팅합니다. 예를 들어, 마이크로서비스 아키텍처에서 각 서비스에 대한 요청을 적절한 서비스 인스턴스로 전달하는 역할을 합니다.
+
+
+- 로드 밸런싱(Load Balancing): 게이트웨이는 여러 서버나 서비스 인스턴스 사이에서 요청을 균등하게 분산시키는 로드 밸런싱 기능을 제공할 수 있습니다.
+
+
+- 보안(Security): 게이트웨이는 인증(Authentication) 및 권한 부여(Authorization)와 같은 보안 관련 기능을 제공하여 시스템의 보안을 강화할 수 있습니다.
+
+
+- API 집계 및 컴포지션(API Aggregation & Composition): 여러 마이크로서비스의 데이터를 집계하거나 조합하여 단일 API 응답으로 반환하는 역할을 수행할 수 있습니다.
+
+
+- 리소스 최적화(Resource Optimization): 요청 및 응답에 대한 변환, 압축, 캐싱 등을 통해 리소스 사용을 최적화할 수 있습니다.
+
+
+- 내결함성(Resilience): 서비스나 서버에 문제가 발생했을 때, 다른 서비스나 서버로 자동으로 요청을 전환하는 등의 방법으로 시스템의 내결함성을 향상시킬 수 있습니다.
+
+
+- 모니터링 및 로깅(Monitoring & Logging): 시스템의 트래픽, 성능, 오류 등에 대한 모니터링 및 로깅을 지원하여 시스템 운영에 필요한 정보를 제공합니다.
+
+ 웹의 흐름에서 게이트웨이는 사용자와 서버나 서비스 사이의 중간 매개체 역할을 하며, 이를 통해 웹 애플리케이션의 확장성, 관리 용이성, 성능 및 안정성을 향상시킬 수 있습니다.
+> 의존성 추가
+> 
+```
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+    implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner"){
+        exclude group: "org.springframework.boot", module: "spring-boot-starter-web"
+    }
+```
+Spring Cloud Gateway - 내부적으로 Spring WebFlux를 의존<br>
+CircuitBreaker - 반응형 서킷브레이커<br>
+spring-boot-starter-web을 명시적으로 제외 (서블릿 기반)<br>
+
+> 서킷브레이커란 ?
+
+서킷 브레이커(Circut Breaker)는 분산 시스템에서 일반적으로 사용되는 디자인 패턴 중 하나로, 원격 서비스 호출이나 외부 시스템 연결에 대한 오류 및 지연을 처리하는 데 도움을 줍니다.
+
+특징:
+
+- 오류 감지: 서킷 브레이커는 외부 서비스나 기능 호출에서 오류가 연속적으로 발생할 때 이를 감지합니다. 이 때 서킷이 "열린(Open)" 상태가 됩니다.
+
+
+- 서비스 차단: 서킷이 열린 상태가 되면, 해당 외부 서비스나 기능 호출은 일정 시간 동안 차단됩니다. 이는 시스템의 나머지 부분이 오류나 지연에 의해 영향받는 것을 방지하고, 문제가 있는 서비스가 회복될 시간을 제공합니다.
+
+
+- 자동 회복: 서킷 브레이커는 일정 시간 후에 서킷을 "반 열린(Half-Open)" 상태로 변경하여 외부 서비스의 호출을 일부 허용합니다. 이렇게 해서 외부 서비스가 회복되었는지를 확인합니다. 만약 오류가 계속 발생한다면 서킷은 다시 열린 상태로 전환되고, 오류가 없다면 "닫힌(Closed)" 상태로 돌아갑니다.
+
+
+- 대체 응답 제공: 서킷이 열린 상태에서 외부 서비스 호출을 차단할 때, 사용자나 클라이언트에게 오류 메시지나 대체 응답을 제공하는 것이 가능합니다. 이는 시스템의 가용성을 높이고 사용자 경험을 개선하는 데 도움을 줍니다.
+
+
+ 서킷 브레이커 패턴은 복잡한 분산 시스템에서 중요한 역할을 합니다. 외부 서비스가 실패할 때 전체 시스템이 오류로 인해 중단되는 것을 방지하기 위한 것입니다. Spring Cloud에서는 Resilience4J, Hystrix 등의 라이브러리를 통해 서킷 브레이커 기능을 쉽게 사용할 수 있습니다.
+
+
+- gateway 설정 클래스입니다.
+```java
+    @Bean
+    public RouteLocator myRoutes(RouteLocatorBuilder builder) {
+        return builder.routes()
+                .route(p -> p
+                        .path("/get") // 엔드포인트 라우팅 설정
+                        .filters(f -> f.addRequestHeader("Hello", "World")) // 필터 추가
+                        .uri("http://httpbin.org:80")) // 요청을 전달할 대상 서비스의 URI를 지정
+                .build();
+```
+해당 빈을 통해 아래 요청을 보내면 
+```
+$ curl http://localhost:8080/get
+```
+아래의 json을 응답받습니다.
+```
+{                                                                              
+  "args": {},                                                                  
+  "headers": {                                                                 
+    "Accept": "*/*",                                                           
+    "Content-Length": "0",                                                     
+    "Forwarded": "proto=http;host=\"localhost:8080\";for=\"127.0.0.1:10736\"", 
+    "Hello": "World",                                                          
+    "Host": "httpbin.org",                                                     
+    "User-Agent": "curl/7.87.0",                                               
+    "X-Amzn-Trace-Id": "Root=1-6521681a-3412e8c81e4f9d8d2db750cf",             
+    "X-Forwarded-Host": "localhost:8080"                                       
+  },                                                                           
+  "origin": "127.0.0.1, 211.54.71.169",                                        
+  "url": "http://localhost:8080/get"                                           
+} 
+```
+
+여기에 위에서 추가한 반응형 circuitbreaker를 이용한다면
+```java
+  /**
+     * RouteLocatorBuilder에 더해 UriConfiguration빈을 가져와 RouteLocator 생성
+     * 위 메소드와 중요한 차이는 경로 라우팅이 아닌 호스트 라우팅을 사용 한다는 것
+     * circuitbreaker.com -> HTTPBin으로 라우팅 -> 회로 차단기에 래핑하는 필터를 등록
+     * @param builder
+     * @param uriConfiguration
+     * @return
+     */
+    @Bean
+    public RouteLocator myRoutes(RouteLocatorBuilder builder, UriConfiguration uriConfiguration) {
+        String httpUri = uriConfiguration.getHttpbin();
+        return builder.routes()
+                .route(p -> p
+                        .path("/get")
+                        .filters(f -> f.addRequestHeader("Hello", "World"))
+                        .uri(httpUri))
+                .route(p -> p
+                        .host("*.circuitbreaker.com")
+                        .filters(f -> f
+                                .circuitBreaker(config -> config
+                                        .setName("mycmd") // 회로차단기 이름
+                                        .setFallbackUri("forward:/fallback") // 우회URI 를 입력하지 않으면 HTTP/1.1 504 Gateway Timeout 발생
+                                ))
+                        .uri(httpUri))
+                .build();
+    }
+
+    @RequestMapping("/fallback")
+    public Mono<String> fallback() {
+        return Mono.just("fallback");
+    }
+}
+
+@ConfigurationProperties
+class UriConfiguration {
+
+    private String httpbin = "http://httpbin.org:80";
+
+    public String getHttpbin() {
+        return httpbin;
+    }
+
+    public void setHttpbin(String httpbin) {
+        this.httpbin = httpbin;
+    }
+}
+```
+아래 요청에 대한 응답입니다.
+```
+$ curl --dump-header - --header 'Host: www.circuitbreaker.com' http://localhost:8080/delay/3
+```
+```
+Content-Type: text/plain;charset=UTF-8
+Content-Length: 8
+Date: Sat, 07 Oct 2023 14:33:02 GMT
+
+fallback
+```
+
+이것을 테스트 하는 코드는 아래와 같습니다.
+```java
+import com.example.springbreaking.gateway.GatewayApplication;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.assertj.core.api.Assertions.*;
+
+/**
+ * properties = {"httpbin=http://localhost:${wiremock.server.port}"}: httpbin이라는 프로퍼티에 WireMock 서버의 URL을 설정합니다.
+ * WebTestClient webClient: 웹 애플리케이션에 대한 요청을 생성하고 응답을 검증하기 위한 Spring WebFlux의 비동기 클라이언트입니다.
+ *
+ * Stubs: WireMock을 사용하여 두 개의 스텁(stub)을 설정합니다. 이 스텁들은 테스트 중에 외부 서비스를 모킹하기 위해 사용됩니다.
+ * 첫 번째 스텁은 /get 요청에 대한 응답으로 JSON 응답을 반환합니다.
+ * 두 번째 스텁은 /delay/3 요청에 3초의 지연 후 no fallback 응답을 반환합니다.
+ *
+ * 첫 번째 요청은 /get 엔드포인트에 대한 것이며, 응답의 Hello 헤더가 "World"인지 검증합니다.
+ * 두 번째 요청은 /delay/3 엔드포인트에 대한 것이며, Host 헤더를 포함하고 있습니다. 응답 본문이 "fallback"인지 검증합니다. 3초의 지연이 있기 때문에 서킷 브레이커의 fallback 메커니즘이 작동해야 합니다.
+ */
+@SpringBootTest(classes = GatewayApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {"httpbin=http://localhost:${wiremock.server.port}"})
+@AutoConfigureWireMock(port = 0)
+public class GatewayApplicationTest {
+
+  @Autowired
+  private WebTestClient webClient;
+
+  @Test
+  public void contextLoads() throws Exception {
+    //Stubs
+    stubFor(get(urlEqualTo("/get"))
+        .willReturn(aResponse()
+          .withBody("{\"headers\":{\"Hello\":\"World\"}}")
+          .withHeader("Content-Type", "application/json")));
+    stubFor(get(urlEqualTo("/delay/3"))
+      .willReturn(aResponse()
+        .withBody("no fallback")
+        .withFixedDelay(3000)));
+
+    webClient
+      .get().uri("/get")
+      .exchange()
+      .expectStatus().isOk()
+      .expectBody()
+      .jsonPath("$.headers.Hello").isEqualTo("World");
+
+    webClient
+      .get().uri("/delay/3")
+      .header("Host", "www.circuitbreaker.com")
+      .exchange()
+      .expectStatus().isOk()
+      .expectBody()
+      .consumeWith(
+        response -> assertThat(response.getResponseBody()).isEqualTo("fallback".getBytes()));
+  }
+}
+```
 
 </details>
 
