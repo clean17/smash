@@ -5,12 +5,12 @@
   <summary>프로젝트 생성</summary>
 
 ## 프로젝트 생성
-https://start.spring.io/ `Generate` 버튼으로 zip 파일 받습니다.
+https://start.spring.io/ 에서 원하는 의존성을 추가한후 아래의`Generate` 버튼으로 zip 파일 받습니다.
 
 </details>
 
 <details>
-  <summary>스프링부트 기본형태</summary>
+  <summary>기본형태</summary>
 
 ## 기본 형태
 ```java

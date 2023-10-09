@@ -200,6 +200,10 @@ dependencies {
 //    implementation 'com.google.cloud:spring-cloud-gcp-starter-pubsub' // 이건 다른 블로그
 //    implementation "org.springframework.integration:spring-integration-core"
 
+    // 중앙 config 테스트중
+    implementation 'org.springframework.cloud:spring-cloud-config-server'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
 }
 
 
