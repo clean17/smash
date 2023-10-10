@@ -83,4 +83,46 @@
         <include refid="${include_target}"/>
     </sql>
 
+    <!-- 쿼리 가독성 -->
+    <sql id="query_1">
+        WITH B AS (
+            SELECT * FROM TABLE_2
+        )
+        SELECT
+            A.ID
+             ,   A.FIRST_NAME
+             ,   A.SECOND_NAME
+             ,   A.LAST_NAME
+             ,   A.AGE
+             ,  (SELECT B.NAME FROM B WHERE B.NAME = A.FIRST_NAME) AS B_1.NAME
+             ,  (SELECT B.NAME FROM B WHERE B.NAME = A.SECOND_NAME) AS B_2.NAME
+             ,  (SELECT B.NAME FROM B WHERE B.NAME = A.LAST_NAME) AS B_3.NAME
+        FROM TABLE_1 A
+    </sql>
+
+    <sql id="query_2">
+        SELECT
+            A.ID
+             ,   A.FIRST_NAME
+             ,   A.SECOND_NAME
+             ,   A.LAST_NAME
+             ,   A.AGE
+             ,   GET_NAME_FROM_TABLE_2(A.FIRST_NAME) AS B_1.NAME
+             ,   GET_NAME_FROM_TABLE_2(A.SECOND_NAME) AS B_2.NAME
+             ,   GET_NAME_FROM_TABLE_2(A.LAST_NAME) AS B_3.NAME
+        FROM TABLE_1 A;
+    </sql>
+
+    <!-- FUNCTION
+    CREATE OR REPLACE FUNCTION GET_NAME_FROM_TABLE_2(p_name VARCHAR2) RETURN VARCHAR2 IS
+        v_name TABLE_2.NAME%TYPE;
+    BEGIN
+        SELECT NAME INTO v_name
+        FROM TABLE_2
+        WHERE NAME = p_name;
+
+        RETURN v_name;
+    END get_name_from_table_2;
+    -->
+
 </mapper>
