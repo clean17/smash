@@ -56,7 +56,13 @@ spring:
     serialization:
       indent_output: true
 
-#  # Apache Cassandra
+  application:
+    name: application
+
+  config:
+    import: optional:configserver:http://localhost:8888/
+
+  #  # Apache Cassandra
 #  cassandra:
 #    schema-action: CREATE_IF_NOT_EXISTS
 #    request:
@@ -120,7 +126,6 @@ management:
     web:
       exposure:
         include: beans
-
 
 
 
