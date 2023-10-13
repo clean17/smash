@@ -1,4 +1,3 @@
 rootProject.name = 'spring-guide'
 
-include 'configuration-client'
-include 'configuration-service'
+include 'src-central-client', 'src-central-server'

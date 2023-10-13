@@ -3795,3 +3795,215 @@ public class BookControllerTests {
 ```
 
 </details>
+
+<details>
+ <summary>멀티 모듈 프로젝트</summary>
+
+
+## 멀티 모듈
+
+일반적은 스프링 프로젝트의 구조는 아래와 같습니다.
+```java
+myproject/
+        |-- src/
+        |   |-- main/
+        |   |   |-- java/
+        |   |   |-- resources/
+        |   |-- test/
+        |       |-- java/
+        |       |-- resources/
+        |-- build.gradle
+```
+gradle의 기본 구조에서는 프로젝트 내부에 src 디렉토리가 존재해야합니다.<br>
+내부에 여러 디렉토리를 만드는 멀티 모듈 프로젝트에서는 gradle이 올바르게 동작하지 않습니다.<br>
+여러 디렉토리를 구성하고 싶다면 `settings.gradle`을 아래와 같이 수정합니다.<br>
+
+```java
+include 'moduleA', 'moduleB'
+```
+include 다음 모듈로 인식시킬 디렉토리의 이름을 입력하면 gradle은 멀티 모듈 프로젝트로 인식하게 됩니다.
+
+ </details>
+
+<details>
+  <summary> 구성 설정 중앙화 </summary>
+
+멀티 모듈 프로젝트나 분산 프로젝트에서 구성 설정을 한곳에서 관리함으로써 모든 모듈이나 프로젝트에서 한번에 설정을 적용시키는 방법으로 config설정을 중앙에서 관리하는 방법이 있습니다.<br>
+
+구조는 외부에 구성 설정(`yml` 이나 `properties`)을 설정하고 설정을 가져올 애플리케이션을 만든 뒤 모듈 애플리케이션이 서버 애플리케이션을 구독하는 형태입니다.<br>
+
+먼저 구성 설정을 로컬 git 저장소나 github 저장소에 구성합니다. (`yml` 이나 `properties` 파일)
+
+만약 로컬에 만든다면 특정 디렉토리에 구성파일을 만든뒤에 해당 디렉토리에서 git 저장소를 만듭니다.
+```
+$ git init .
+$ git add .
+$ git commmit -m "커밋"
+$ git branch -M main
+```
+설정은 간단하게 아래처럼 만들겠습니다. ( `myConfig.yml` )
+```yml
+message: Hello world
+```
+
+그리고 구성 설정을 중앙화 시킬 애플리케이션을 만듭니다.<br>
+
+의존성은 아래와 같습니다.
+```java
+ext {
+    set('springCloudVersion', "2021.0.3")
+}
+
+dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-config-server'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+```
+그리고 애플리케이션은 아래와 같이 만듭니다.
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.config.server.EnableConfigServer;
+
+/**
+ * @EnableConfigServer - 해당 애플리케이션은  Spring Cloud Config Server 로 동작합니다.
+ */
+@EnableConfigServer
+@SpringBootApplication
+public class ConfigurationServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigurationServiceApplication.class, args);
+    }
+}
+```
+그리고 이 서버에 외부 설정을 연결시킵니다.
+```yml
+server:
+  port: 8888
+
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: ${USERPROFILE}/Desktop/config2  # 로컬 저장소 (windows)
+
+# github의 저장소를 사용할 경우
+# https://github.com/spring-cloud-samples/config-repo
+```
+`@EnableConfigServer`을 사용한 애플리케이션은 해당 애플리케이션을 통한 엔드포인트를 제공합니다.<br>
+예를들어 아래와 같은 엔드포인트가 생성됩니다.
+```
+$ curl http://localhost:8888/application/default
+{"name":"application","profiles":["default"],"label":null,"version":"70cd62c7cf9277caf1c818bee75d5c4fb549aa8b","state":null,"propertySources":[]}
+
+$ curl http://localhost:8888/myConfig/default
+{"name":"myConfig","profiles":["default"],"label":null,"version":"70cd62c7cf9277caf1c818bee75d5c4fb549aa8b","state":null,"propertySources":[{"name":"C:\\Users\\piw94/Desktop/config2/file:C:\\Users\\piw94\\AppData\\Local\\Temp\\config-repo-2586090530938403737\\myConfig.yml","source":{"message":"Hello world"}}]}
+```
+
+이제 이 서버에 연결 시킬 모듈 프로젝트의 설정입니다.
+
+아래의 의존성을 추가합니다.
+```
+ext {
+	set('springCloudVersion', "2021.0.3")
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.cloud:spring-cloud-starter-config'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+```
+이 의존성을 통한 yml 설정입니다.
+```yml
+spring:
+  application:
+    name: myConfig
+    
+  config:
+    import: optional:configserver:http://localhost:8888/
+    # optional 해당 설정 소스가 없거나 접근할 수 없는 경우에도 애플리케이션 시작을 계속하도록 지시 
+    #  - > http://localhost:8888/ 에서 외부 설정을 가져오도록 지시
+    # optional: 접두사는 이 설정 소스가 필수가 아니라는 것을 의미합니다. 
+    # 만약 Config Server에 접근할 수 없거나 문제가 발생해도, 애플리케이션은 계속 시작하려고 시도합니다.
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    # 모든 엔드포인트 활성화
+```
+애플리케이션 이름은 연결시킬 외부 구성(`myConfig.yml`)의 이름과 일치시킵니다.
+
+간단한 클리이언트측 컨트롤러를 추가하고 테스트합니다.
+```java
+@SpringBootApplication
+public class ConfigurationClientApplication {
+
+  public static void main(String[] args) {
+    SpringApplication.run(ConfigurationClientApplication.class, args);
+  }
+}
+
+@RefreshScope
+@RestController
+class MessageRestController {
+
+  @Value("${message:Hello default}")
+  private String message;
+
+  @RequestMapping("/message")
+  String getMessage() {
+    return this.message;
+  }
+}
+```
+
+이제 클라이언트 애플리케이션을 실행한다면 설정파일을 전달해주는 중앙 애플리케이션에는 아래 로그가 출력됩니다.
+```
+2023-10-14 01:04:13.288  INFO 29100 --- [nio-8888-exec-5] o.s.c.c.s.e.NativeEnvironmentRepository  :
+ Adding property source: Config resource 'file [C:\Users\[사용자이름]\AppData\Local\Temp\config-repo-18044115755656342841\myConfig.yml]' 
+ via location 'file:/C:/Users/[사용자이름]/AppData/Local/Temp/config-repo-18044115755656342841/'
+```
+연결이 제대로 되었다는 로그를 확인했다면 아래 요청을 통해서 중앙화된 구성설정의 프로퍼티를 가져올 수 있습니다.
+```
+$ curl http://localhost:8080/message
+Hello world
+
+----------------------
+연결이 안됐다면
+
+Hello default
+```
+
+여기서 `@RefreshScope`는 외부 설정파일이 변경되면 런타임중에 적용시켜주는 어노테이션입니다.<br>
+의존성에 `actuator`를 추가한 이유가 여기에 있습니다.<br>
+앞서 클라이언트 설정에서 `include: "*"`를 통해서 `actuator`의 엔드포인트를 활성화했습니다.<br>
+여기서 중앙화된 설정파일을 수정 커밋한 후 아래의 커맨드를 입력하면 서버를 중지 없이 `@RefreshScope` 가 붙은 빈을 다시 생성합니다.
+```java
+$ curl -X POST http://localhost:8080/actuator/refresh
+[ "config.client.version", "message" ]
+```
+이제 엔드포인트에 다시 요청을 보내면 변경된 중앙설정이 적용됩니다.
+```java
+$ curl http://localhost:8080/message
+why so serious ?
+```
+
+</details>
