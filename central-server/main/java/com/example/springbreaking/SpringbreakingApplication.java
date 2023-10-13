@@ -52,6 +52,19 @@ public class SpringbreakingApplication {
 //		System.exit(0);
 	}
 
+	@RefreshScope
+	@RestController
+	class MessageRestController {
+
+		@Value("${message:Hello default}")
+		private String message;
+
+		@RequestMapping("/message")
+		String getMessage() {
+			return this.message;
+		}
+	}
+
 
 	/**
 	 * Builder의 build 메소드를 호출해서 RestTemplate 반환

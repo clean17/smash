@@ -20,14 +20,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.config.server.EnableConfigServer;
 
-/**
- * @EnableConfigServer - 해당 애플리케이션은  Spring Cloud Config Server 로 동작합니다.
- */
 @EnableConfigServer
 @SpringBootApplication
 public class ConfigurationServiceApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(ConfigurationServiceApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(ConfigurationServiceApplication.class, args);
+	}
 }

@@ -40,6 +40,11 @@ repositories {
 //    }
 }
 
+
+// bootRun {
+//     mainClassName = 'com.example.springbreaking.SpringbreakingApplication'
+// }
+
 /**
  * 변수 설정
  */

@@ -57,10 +57,15 @@ spring:
       indent_output: true
 
   application:
-    name: application
+    name: myConfig
 
+  # 중앙 서버에서 구성 설정 가져오기
   config:
     import: optional:configserver:http://localhost:8888/
+    # optional 해당 설정 소스가 없거나 접근할 수 없는 경우에도 애플리케이션 시작을 계속하도록 지시 - > http://localhost:8888/ 에서 외부 설정을 가져오도록 지시
+    # optional: 접두사는 이 설정 소스가 필수가 아니라는 것을 의미합니다. 만약 Config Server에 접근할 수 없거나 문제가 발생해도, 애플리케이션은 계속 시작하려고 시도합니다.
+    
+    
 
   #  # Apache Cassandra
 #  cassandra:
@@ -125,7 +130,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: beans
+        include: beans # "*"
+        # Spring Boot Actuator를 사용할 때 특정 관리 엔드포인트를 웹을 통해 노출시키도록 설정합니다.
 
 
 
