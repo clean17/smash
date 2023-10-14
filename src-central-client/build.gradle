@@ -55,7 +55,8 @@ ext {
 dependencies {
     /********************************* 스프링 부트 편의를 위한 의존성 *******************************************/
 
-    implementation 'org.springframework.boot:spring-boot-starter-web' // Spring Mvc - Reactive와 함께 사용 불가
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation project(path: ':library') // Spring Mvc - Reactive와 함께 사용 불가
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -111,6 +112,9 @@ dependencies {
 
     // 중앙 config 가져오기
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
+
+    // 멀티 모듈 의존성 추가
+    implementation project(':library')
 
     /************************************ View *******************************************************/
 

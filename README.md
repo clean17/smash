@@ -2247,8 +2247,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.example.springbreaking.servlet.testingWeb.TestGreetingController;
-import com.example.springbreaking.servlet.testingWeb.TestGreetingService;
+import com.example.multimodule.servlet.testingWeb.TestGreetingController;
+import com.example.multimodule.servlet.testingWeb.TestGreetingService;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -2266,25 +2266,25 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(TestGreetingController.class)
 public class WebMockTest {
 
-	/**
-	 * Mockito를 이용한 Mock테스트
-	 */
-	@Autowired
-	private MockMvc mockMvc;
+  /**
+   * Mockito를 이용한 Mock테스트
+   */
+  @Autowired
+  private MockMvc mockMvc;
 
-	@MockBean
-	private TestGreetingService service;
+  @MockBean
+  private TestGreetingService service;
 
 
-	@Test
-	public void greetingShouldReturnMessageFromService() throws Exception {
-		when(service.greet()).thenReturn("Hello, Mock");
-		mockMvc.perform(get("/testingWeb"))
-				.andDo(print())
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(content().string(containsString("Hello, Mock")));
-	}
+  @Test
+  public void greetingShouldReturnMessageFromService() throws Exception {
+    when(service.greet()).thenReturn("Hello, Mock");
+    mockMvc.perform(get("/testingWeb"))
+            .andDo(print())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Hello, Mock")));
+  }
 }
 ```
 
@@ -3551,8 +3551,9 @@ fallback
 ```
 
 이것을 테스트 하는 코드는 아래와 같습니다.
+
 ```java
-import com.example.springbreaking.gateway.GatewayApplication;
+import com.example.multimodule.gateway.GatewayApplication;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -3576,7 +3577,7 @@ import static org.assertj.core.api.Assertions.*;
  */
 @SpringBootTest(classes = GatewayApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {"httpbin=http://localhost:${wiremock.server.port}"})
+        properties = {"httpbin=http://localhost:${wiremock.server.port}"})
 @AutoConfigureWireMock(port = 0)
 public class GatewayApplicationTest {
 
@@ -3587,29 +3588,29 @@ public class GatewayApplicationTest {
   public void contextLoads() throws Exception {
     //Stubs
     stubFor(get(urlEqualTo("/get"))
-        .willReturn(aResponse()
-          .withBody("{\"headers\":{\"Hello\":\"World\"}}")
-          .withHeader("Content-Type", "application/json")));
+            .willReturn(aResponse()
+                    .withBody("{\"headers\":{\"Hello\":\"World\"}}")
+                    .withHeader("Content-Type", "application/json")));
     stubFor(get(urlEqualTo("/delay/3"))
-      .willReturn(aResponse()
-        .withBody("no fallback")
-        .withFixedDelay(3000)));
+            .willReturn(aResponse()
+                    .withBody("no fallback")
+                    .withFixedDelay(3000)));
 
     webClient
-      .get().uri("/get")
-      .exchange()
-      .expectStatus().isOk()
-      .expectBody()
-      .jsonPath("$.headers.Hello").isEqualTo("World");
+            .get().uri("/get")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.headers.Hello").isEqualTo("World");
 
     webClient
-      .get().uri("/delay/3")
-      .header("Host", "www.circuitbreaker.com")
-      .exchange()
-      .expectStatus().isOk()
-      .expectBody()
-      .consumeWith(
-        response -> assertThat(response.getResponseBody()).isEqualTo("fallback".getBytes()));
+            .get().uri("/delay/3")
+            .header("Host", "www.circuitbreaker.com")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(
+                    response -> assertThat(response.getResponseBody()).isEqualTo("fallback".getBytes()));
   }
 }
 ```
@@ -3737,8 +3738,9 @@ query bookDetails {
 
 그리고 아래처럼 테스트 할 수 있습니다.
 주석은 java 15이후입니다.
+
 ```java
-import com.example.springbreaking.graphql.BookController;
+import com.example.multimodule.graphql.BookController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
@@ -3750,8 +3752,8 @@ import org.springframework.graphql.test.tester.GraphQlTester;
 @GraphQlTest(BookController.class)
 public class BookControllerTests {
 
-    @Autowired
-    private GraphQlTester graphQlTester;
+  @Autowired
+  private GraphQlTester graphQlTester;
 
 //    @Test
 //    void shouldGetFirstBook() {
@@ -3773,24 +3775,24 @@ public class BookControllerTests {
 //                """);
 //    }
 
-    @Test
-    void shouldGetFirstBook() {
-        this.graphQlTester
-                .documentName("bookDetails") // 찾으려는 graphql문서
-                .variable("id", "book-1")
-                .execute()
-                .path("bookById")
-                .matchesJson(   "{\n" +
-                        "    \"id\": \"book-1\",\n" +
-                        "    \"name\": \"Effective Java\",\n" +
-                        "    \"pageCount\": 416,\n" +
-                        "    \"author\": {\n" +
-                        "      \"id\": \"author-1\",\n" +
-                        "      \"firstName\": \"Joshua\",\n" +
-                        "      \"lastName\": \"Bloch\"\n" +
-                        "    }\n" +
-                        "}");
-    }
+  @Test
+  void shouldGetFirstBook() {
+    this.graphQlTester
+            .documentName("bookDetails") // 찾으려는 graphql문서
+            .variable("id", "book-1")
+            .execute()
+            .path("bookById")
+            .matchesJson("{\n" +
+                    "    \"id\": \"book-1\",\n" +
+                    "    \"name\": \"Effective Java\",\n" +
+                    "    \"pageCount\": 416,\n" +
+                    "    \"author\": {\n" +
+                    "      \"id\": \"author-1\",\n" +
+                    "      \"firstName\": \"Joshua\",\n" +
+                    "      \"lastName\": \"Bloch\"\n" +
+                    "    }\n" +
+                    "}");
+  }
 }
 ```
 
@@ -3822,6 +3824,172 @@ gradle의 기본 구조에서는 프로젝트 내부에 src 디렉토리가 존�
 include 'moduleA', 'moduleB'
 ```
 include 다음 모듈로 인식시킬 디렉토리의 이름을 입력하면 gradle은 멀티 모듈 프로젝트로 인식하게 됩니다.
+
+생성할 디렉토리는 스프링프로젝트 구조를 따라야 하므로 해당 디렉토리로 이동한 후 다음 커맨드를 이용해서 디렉토리를 생성합니다.
+```
+$ mkdir -p src/main/java/com/example/multimodule
+```
+
+## 멀티 모듈 의존성 관리
+
+지금까지의 모듈은 단순히 gradle에 멀티 모듈을 알려주기 위함입니다.<br>
+이번에는 실제로 멀티 모듈을 만들고 멀티 모듈과 현재 애플리케이션 사이의 의존성 관리를 알아보겠습니다.
+
+첫번째로 멀티 모듈로 이용할 디렉토리를 생성하고 (저는 `library`로 하겠습니다.) 위 커맨드를 이용해서 구조를 만듭니다.
+
+그리고 모듈 프로젝트에 아래 POJO를 추가합니다.
+```java
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "service")
+public class ServiceProperties {
+
+  /**
+   * A message for the service.
+   */
+  private String message;
+
+  public String getMessage() {
+    return message;
+  }
+
+  public void setMessage(String message) {
+    this.message = message;
+  }
+}
+```
+여기에 사용되는 `@ConfigurationProperties` 는 외부 설정을 POJO에 바인딩 하는 역할을 합니다.<br>
+
+이 POJO를 응답할 빈을 추가합니다.
+```java
+@Service
+@EnableConfigurationProperties(ServiceProperties.class)
+public class MyService {
+
+  private final ServiceProperties serviceProperties;
+
+  public MyService(ServiceProperties serviceProperties) {
+    this.serviceProperties = serviceProperties;
+  }
+
+  public String message() {
+    return this.serviceProperties.getMessage();
+  }
+}
+```
+여기서는 `@EnableConfigurationProperties`를 통해서 `@ConfigurationProperties`클래스를 빈으로 등록합니다.<br>
+`@ConfigurationProperties`클래스를 `@Configuration`를 통해서 자체적으로 빈으로 등록하는 것과 동일한 효과입니다.
+
+그리고 가장 중요한 멀티모듈의 `build.gradle` 설정입니다.<br>
+여기서는 자체적으로 플러그인을 사용하지 않고 스프링부트가 관리하는 BOM을 가져와 프로젝트 의존성에 추가합니다. 
+```
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.14' apply false // apply false : 플러그인 비활성화
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    //  Spring의 Dependency Management 기능을 제공 -> Maven BOM 같은 의존성 관리 기능 사용
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+java {
+    sourceCompatibility = '11'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement { // Maven BOM 의존성을 가져오는 설정, 여기서는 스프링부트의 BOM을 가져와 프로젝트 의존성 관리에 추가
+    imports {
+        mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+```
+이제 이 멀티 모듈을 사용할 애플리케이션에서 아래 build.gradle 설정을 통해 멀티 모듈 의존성을 추가합니다.
+```
+implementation project(':library')
+```
+
+위 설정을 통해서 멀티모듈의 의존성을 메인 애플리케이션에서 사용할 수 있게 됩니다.
+
+먼저 첫번째 변경점입니다.<br>
+`scanBasePackages`을 통해서 빈을 스캔할 패키지를 제한할 수 있습니다.<br>
+여기서는 멀티모듈과 메인 애플리케이션이 `com.example.multimodule`이라는 동일한 패키지를 사용합니다.<br>
+```java
+@SpringBootApplication(scanBasePackages = "com.example.multimodule")
+@EnableScheduling
+@Slf4j
+public class SpringbreakingApplication {
+  ...
+}
+```
+이제 메인 애플리케이션은 멀티 모듈의 빈들을 원래 나의 빈처럼 가져다 사용할 수 있게 됩니다.
+```java
+import com.example.multimodule.service.MyService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequiredArgsConstructor
+public class ModuleController {
+
+    private final MyService myService;
+
+    @GetMapping("/module")
+    public String home() {
+        return myService.message();
+    }
+}
+```
+`import com.example.multimodule.service.MyService;` 를 통해서 같은 패키지의 빈을 가져옵니다. (다른 멀티 모듈 디렉토리, 같은 패키지 명)
+
+앞서 멀티 모듈에서 `build.gradle` 에서는 아래 설정을 통해서 Spring Boot의 `Dependency Management BOM`을 의존성 관리에 사용하도록 했습니다.
+```java
+dependencyManagement { // Maven BOM 의존성을 가져오는 설정, 여기서는 스프링부트의 BOM을 가져와 프로젝트 의존성 관리에 추가
+    imports {
+        mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+    }
+}
+```
+
+이를 통해서 멀티 모듈에서 POJO는 메인 애플리케이션의 `application.yml`의 프로퍼티 설정에 접근이 가능합니다.
+```yaml
+service:
+  message: Hello, Module
+```
+이제 멀티 모듈 프로젝트를 실행하고 요청을 보내면 멀티 모듈고 메인 애플리케이션이 연결된 것을 확인할 수 있습니다.
+```
+$ ./gradlew build && ./gradlew :src-central-client:bootRun
+
+...
+BUILD SUCCESSFUL in 29s
+18 actionable tasks: 7 executed, 11 up-to-date
+
+> Task :src-central-client:bootRun
+18:59:49.187 [Thread-0] DEBUG org.springframework.boot.devtools.restart.classloader.RestartClassLoader - Created RestartClassLoader org.springframework.boot.devtools.restart.classloader.RestartClassLoader@1773ee0c
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::               (v2.7.14)
+...
+
+------------
+서버 실행 후 
+
+$ http://localhost:8080/module
+Hello, Module
+```
 
  </details>
 

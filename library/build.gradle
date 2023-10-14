@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.14' apply false // apply false : 플러그인 비활성화
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    //  Spring의 Dependency Management 기능을 제공 -> Maven BOM 같은 의존성 관리 기능 사용
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+java {
+    sourceCompatibility = '11'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement { // Maven BOM 의존성을 가져오는 설정, 여기서는 스프링부트의 BOM을 가져와 프로젝트 의존성 관리에 추가
+    imports {
+        mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

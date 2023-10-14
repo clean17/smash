@@ -114,6 +114,8 @@ management:
       exposure:
         include: "*"
 
+service:
+  message: Hello, Module
 
 
 
