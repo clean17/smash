@@ -3921,6 +3921,7 @@ implementation project(':library')
 먼저 첫번째 변경점입니다.<br>
 `scanBasePackages`을 통해서 빈을 스캔할 패키지를 제한할 수 있습니다.<br>
 여기서는 멀티모듈과 메인 애플리케이션이 `com.example.multimodule`이라는 동일한 패키지를 사용합니다.<br>
+따라서 기존의 메인 애플리케이션의 패키지명도 모듈 패키지와 동일한 이름으로 변경합니다. -> `com.example.multimodule`
 ```java
 @SpringBootApplication(scanBasePackages = "com.example.multimodule")
 @EnableScheduling
@@ -3966,7 +3967,7 @@ service:
 ```
 이제 멀티 모듈 프로젝트를 실행하고 요청을 보내면 멀티 모듈고 메인 애플리케이션이 연결된 것을 확인할 수 있습니다.
 ```
-$ ./gradlew build && ./gradlew :src-central-client:bootRun
+$ ./gradlew build && ./gradlew :src-client:bootRun
 
 ...
 BUILD SUCCESSFUL in 29s
@@ -4173,5 +4174,234 @@ $ curl -X POST http://localhost:8080/actuator/refresh
 $ curl http://localhost:8080/message
 why so serious ?
 ```
+
+</details>
+
+<details>
+  <summary> Spring Eureka </summary>
+
+## Spring Eureka
+
+
+Eureka는 클라우드 환경의 다수의 서비스(예: API 서버)들의 로드 밸런싱 및 장애 조치 목적을 가진 미들웨어서버입니다.<br>
+또한 Eureka 서버는 Netflix에서 개발한 서비스 디스커버리 솔루션 중 하나입니다.<br>
+서비스 디스커버리는 마이크로서비스 아키텍처에서 서비스 간의 동적인 위치를 찾아주는 역할을 합니다.
+![img_1.png](img_1.png)
+  
+유레카 서버는 여러 유레카 인스턴스를 활용하여 서로가 복제본(peer)관계를 형성합니다.<br>
+이를 통해 고가용성을 지원합니다.<br>
+
+즉, 서비스 인스턴스가 유레카 서버에 등록될 때는 모든 복제본 서버에 전파됩니다.<br>
+그리고 서비스 인스턴스는 주기적으로 유레카 서버에 자신의 상태를 갱신합니다.<br>
+해당 서비스 인스턴스가 갱신을 보내지 않을 경우 해당 서비스는 노드에서 제거됩니다.
+
+위 이미지는 하나의 서버가 여러 클라이언트와 연결되어 있는데 여러 서버를 통해서 고 가용성을 만들 수 있습니다.
+
+먼저 유레카 서버를 만들어 보겠습니다.<br>
+
+의존성입니다.
+```
+ext {
+    set('springCloudVersion', "2021.0.8")
+}
+
+dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-server'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+```
+간단하게 서버를 실행할 애플리케이션 코드 입니다.
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
+
+/**
+ * 레지스트리가 연결할 복제본 노드가 필요.. 프로덕션 환경에서는 둘 이상의 레지스트리 인스턴스가 필요
+ * 연습 환경에서는 관련 로깅을 비활성화
+ */
+@EnableEurekaServer
+@SpringBootApplication
+public class ServiceRegistrationAndDiscoveryServiceApplication {
+
+  public static void main(String[] args) {
+    SpringApplication.run(ServiceRegistrationAndDiscoveryServiceApplication.class, args);
+  }
+}
+```
+우리가 만들어볼 유레카 서버는 하나이므로 연결할 유레카서버 설정을 비활성화 합니다.
+```yml
+# 현재 레지스트리를 로컬로 돌리기 위한 포트를 별도 구성
+server:
+  port: 8761
+
+# 유레카 노드 레지스트리 등록 비활성화 ( 단독 서버 )
+eureka:
+  client:
+    register-with-eureka: false # 자신을 유레카 서버에 등록하지 않도록
+    fetch-registry: false # 유레카 서버가 다른 유레카 서버 서비스 목록을 가져오지 않도록
+
+# 로깅 비활성화
+logging:
+  level:
+    com:
+      netflix:
+        eureka: OFF
+        discovery: OFF
+```
+이제 해당 서버를 실행합니다.
+```
+$ ./gradlew :eureka-service:bootRun
+```
+이제 우리는 실행된 유레카 서버를 확인할 수 있습니다.<br>
+`http://localhost:8761/` 엔드포인트에서 현재 상태를 확인 가능합니다.<br>
+또한 클라이언트가 자신의 상태를 갱신할 엔드포인트도 생성됩니다. -> `http://localhost:8761/eureka/`
+
+이제 유레카에 등록할 클라이언트 인스턴스를 만들겠습니다.
+
+먼저 의존성입니다.
+```
+ext {
+	set('springCloudVersion', "2021.0.3")
+}
+
+dependencies {
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+```
+클라이언트 애플리케이션은 `@EnableEurekaClient` 을 이용합니다.
+```java
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@EnableEurekaClient
+@SpringBootApplication
+public class ServiceRegistrationAndDiscoveryClientApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ServiceRegistrationAndDiscoveryClientApplication.class, args);
+	}
+}
+
+@RestController
+class ServiceInstanceRestController {
+
+	@Autowired
+	private DiscoveryClient discoveryClient;
+
+	@RequestMapping("/service-instances/{applicationName}")
+	public List<ServiceInstance> serviceInstancesByApplicationName(
+			@PathVariable String applicationName) {
+		return this.discoveryClient.getInstances(applicationName);
+	}
+}
+```
+여기에 연결할 구성 설정입니다.
+```yml
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true # 유레카에 등록
+    fetch-registry: true # 유레카에서 조회
+
+logging:
+  level:
+    com:
+      netflix:
+        eureka: OFF
+        discovery: OFF
+
+spring:
+  application:
+    name: myEureka
+```
+
+이제 클라이언트를 실행합니다.
+```
+$ ./gradlew :src-client:bootRun
+```
+
+매핑된 엔드포인트로 클라이언트의 애플리케이션을 입력하면 유레카 서버로 해당 정보가 들어가게 됩니다.
+`http://localhost:8080/service-instances/myEureka`  <br>
+위 엔드포인트로 요청을 보내면 유레카 서버에서 json데이터를 응답해줍니다.
+```json
+[
+  {
+    "port": 8080,
+    "host": "mywebdav.com",
+    "scheme": "http",
+    "uri": "http://mywebdav.com:8080",
+    "serviceId": "MYEUREKA",
+    "metadata": {
+      "management.port": "8080"
+    },
+    "secure": false,
+    "instanceId": "mywebdav.com:myEureka:8080",
+    "instanceInfo": {
+      "instanceId": "mywebdav.com:myEureka:8080",
+      "app": "MYEUREKA",
+      "appGroupName": null,
+      "ipAddr": "192.168.0.2",
+      "sid": "na",
+      "homePageUrl": "http://mywebdav.com:8080/",
+      "statusPageUrl": "http://mywebdav.com:8080/actuator/info",
+      "healthCheckUrl": "http://mywebdav.com:8080/actuator/health",
+      "secureHealthCheckUrl": null,
+      "vipAddress": "myEureka",
+      "secureVipAddress": "myEureka",
+      "countryId": 1,
+      "dataCenterInfo": {
+        "@class": "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
+        "name": "MyOwn"
+      },
+      "hostName": "mywebdav.com",
+      "status": "UP",
+      "overriddenStatus": "UNKNOWN",
+      "leaseInfo": {
+        "renewalIntervalInSecs": 30,
+        "durationInSecs": 90,
+        "registrationTimestamp": 1697283942109,
+        "lastRenewalTimestamp": 1697284062060,
+        "evictionTimestamp": 0,
+        "serviceUpTimestamp": 1697283941553
+      },
+      "isCoordinatingDiscoveryServer": false,
+      "metadata": {
+        "management.port": "8080"
+      },
+      "lastUpdatedTimestamp": 1697283942110,
+      "lastDirtyTimestamp": 1697283941498,
+      "actionType": "ADDED",
+      "asgName": null
+    }
+  }
+]
+```
+그리고 우리는 유레카 서버의 상태를 `http://localhost:8761/` 엔드포인트를 통해서 확인할 수 있습니다.
+![img_3.png](img_3.png)
+
+이로써 간단히 우리의 애플리케이션을 유레카 서버에 등록해봤습니다.
 
 </details>

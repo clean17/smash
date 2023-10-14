@@ -1,0 +1,19 @@
+# 현재 레지스트리를 로컬로 돌리기 위한 포트를 별도 구성
+server:
+  port: 8761
+
+# 관련 레지스트리 등록 비활성화
+eureka:
+  client:
+    register-with-eureka: false # 자신을 유레카 서버에 등록하지 않도록
+    fetch-registry: false # 유레카 서버가 다른 유레카 서버 서비스 목록을 가져오지 않도록
+
+# 로깅 비활성화
+logging:
+  level:
+    com:
+      netflix:
+#        eureka: OFF
+        eureka: DEBUG
+#        discovery: OFF
+        discovery: DEBUG

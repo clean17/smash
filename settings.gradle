@@ -1,3 +1,3 @@
 rootProject.name = 'spring-guide'
 
-include 'src-central-client', 'src-central-server', 'library'
+include 'src-client', 'config-central-service', 'library', 'eureka-service'
