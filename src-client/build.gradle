@@ -119,6 +119,9 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 //    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-server' // 유레카 클라이언트는 서버 제외
 
+    // cloud contract client
+    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
+
     /************************************ View *******************************************************/
 
 /*    // Vaadin // 24.1.10 버전은 자바11과 호환되지 않음 - 사용하려니 전체 웹팩을 다운받음
