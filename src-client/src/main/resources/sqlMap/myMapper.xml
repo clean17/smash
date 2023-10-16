@@ -125,4 +125,43 @@
     END get_name_from_table_2;
     -->
 
+
+    <!-- 쿼리 실행 계획 꼭 확인할 것 -->
+    <sql id="">
+        SELECT * FROM (
+        SELECT ROWNUM AS RN
+        ,      AAA.*
+        FROM (
+        SELECT TO_NUMBER(TSO_BLDG_ADM_ID) AS A
+        FROM TB_INF_BLDG TIB
+        ) AAA
+        WHERE ROWNUM <= 400000
+        )
+        WHERE RN >= 350000; -- 평균적으로 3.5초
+    </sql>
+
+    <sql id="">
+        SELECT * FROM (
+                          SELECT ROWNUM AS RN, AA.*
+                          FROM (
+                                   SELECT TO_NUMBER(TSO_BLDG_ADM_ID) AS A
+                                   FROM TB_INF_BLDG TIB
+                               ) AA -- 14초
+                          OFFSET 400000 ROWS
+                              FETCH NEXT 50000 ROWS ONLY
+                      )  -- 평균적으로 3.8초
+    </sql>
+
+    <sql id="">
+        SELECT * FROM (
+                          SELECT ROWNUM AS RN
+                               ,      AA.*
+                          FROM (
+                                   SELECT TO_NUMBER(TSO_BLDG_ADM_ID) AS A
+                                   FROM TB_INF_BLDG TIB
+                               ) AA
+                      )
+        WHERE RN BETWEEN 20001 AND 70000; -- 평균적으로 4.2초
+    </sql>
+
 </mapper>

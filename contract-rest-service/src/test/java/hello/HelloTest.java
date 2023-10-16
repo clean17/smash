@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class HelloTest extends BaseClass{
 
     @Test
-    public void testFindPersonById() {
+    public void testFindPersonById() throws Exception{
         System.out.println("테스트");
     }
 }

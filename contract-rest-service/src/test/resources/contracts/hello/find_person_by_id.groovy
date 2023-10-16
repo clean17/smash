@@ -1,4 +1,11 @@
-// REST 서비스 계약
+/**
+ *  REST 서비스 계약
+ *
+ * 계약 테스트를 위한 절차
+ * - src/test/resources/contracts 디렉토리에 계약을 정의, Groovy 또는 yml 파일로
+ * - 계약 테스트의 기본 동작을 정의하는 Base Class를 작성 - 모킹, 초기설정
+ * - 터미널에서 ./gradlew contractTest 실행 ( 계약 테스트를 contractTest로 이름지었음 )
+ */
 import org.springframework.cloud.contract.spec.Contract
 
 Contract.make {

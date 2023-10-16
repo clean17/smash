@@ -5,11 +5,8 @@ plugins {
     id 'org.springframework.cloud.contract' version '3.1.3'
 }
 
-apply plugin: 'spring-cloud-contract'
-
-//group = 'com.example'
-group = 'hello'
-//version = '0.0.1-SNAPSHOT'
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
 java {
     sourceCompatibility = '11'
     targetCompatibility = '11'
@@ -43,15 +40,17 @@ contracts { // 계약 DSL 파일들이 위치한 디렉토리를 지정
     // 기본적인 Gradle의 계약 설정 디렉토리 - src/contractTest/resources/contracts
     // 아래 설정을 통해 Maven 프로젝트와 동일한 구조를 사용하도록 변경
     contractsDslDir = file("src/test/resources/contracts")
-    // 계약 검증 테스트시 사용될 기본 클래스들의 패키지 경로
+    // 계약 검증 테스트시 사용될 기본 클래스들의 패키지 경로 - src/test/java/hello
     packageWithBaseClasses = 'hello'
     // 매핑 패턴
     baseClassMappings {
-        // 'hello'문자열을 포함하는 계약 DSL파일들이 'hello.BaseClass'를 기본 클래스로 사용하도록 지정
+        // 'hello'문자열을 포함하는 계약 DSL파일들이 'hello/BaseClass.java'를 기본 클래스로 사용하도록 지정
+        // src/test/resources/contracts/hello 디렉토리도 포함됨
         baseClassMapping(".*hello.*", "hello.BaseClass")
     }
 }
 
+// ./gradlew contractTest 를 통해서 위에서 설정한 계약 파일을 테스트 (groovy파일)
 tasks.named('contractTest') {
     useJUnitPlatform()
 }
