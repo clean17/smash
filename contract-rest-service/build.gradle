@@ -12,11 +12,11 @@ java {
     targetCompatibility = '11'
 }
 
-    bootJar {
-        // jar 이름 지정
-        archiveFileName = 'contract-rest-service'
-        version = '0.0.1-SNAPSHOT'
-    }
+bootJar {
+    // jar 이름 지정
+    archiveFileName = 'contract-rest-service'
+    version = '0.0.1-SNAPSHOT'
+}
 
 repositories { mavenCentral() }
 

@@ -4426,8 +4426,145 @@ $ ./gradlew :src-client:bootRun
 MSA에서 이러한 "계약"을 사용하는 이유는 서비스간의 상호작용을 안정적이고 일관되게 유지하기 위함입니다.<br>
 즉, 이러한 "계약"을 통해 통신이 예측가능하고 안정적이게 됩니다.
 
+일반적인 JUnit은 서비스의 내부 로직을 테스트하는데 중점을 둡니다.<br>
+반면 Spring Cloud Contract은 서비스간의 통신 인터페이스를 테스트합니다.<br>
+이를통해 각 통신이 계약을 준수하는지 의도적인 변경은 없는지 확인합니다.
+
+이러한 계약의 주요 철학은 `Consumer-Driven Contracts`입니다.<br>
+이는 컨슈머(클라이언트)가 프로듀서(서버)에 대한 요구 사항을 명시하고, 이 요구 사항을 계약으로 정의하는 방식입니다.
+
+
 - 계약 서비스 만들기
 
 의존성 
+```json
+plugins {
+  id 'java'
+  id 'org.springframework.boot' version '2.7.14'
+  id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+  id 'org.springframework.cloud.contract' version '3.1.3'
+}
 
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+java {
+  sourceCompatibility = '11'
+  targetCompatibility = '11'
+}
+
+bootJar {
+  // jar 이름 지정
+  archiveFileName = 'contract-rest-service'
+  version = '0.0.1-SNAPSHOT'
+}
+
+repositories { mavenCentral() }
+
+ext {
+  set('springCloudVersion', "2021.0.3")
+}
+
+dependencies {
+  implementation 'org.springframework.boot:spring-boot-starter-web'
+  testImplementation 'org.springframework.boot:spring-boot-starter-test'
+  testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-verifier'
+}
+
+dependencyManagement {
+  imports {
+  mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+}
+}
+
+contracts { // 계약 DSL 파일들이 위치한 디렉토리를 지정
+// 기본적인 Gradle의 계약 설정 디렉토리 - src/contractTest/resources/contracts
+// 아래 설정을 통해 Maven 프로젝트와 동일한 구조를 사용하도록 변경
+contractsDslDir = file("src/test/resources/contracts")
+// 계약 검증 테스트시 사용될 기본 클래스들의 패키지 경로 - src/test/java/hello
+packageWithBaseClasses = 'hello'
+// 매핑 패턴
+baseClassMappings {
+// 'hello'문자열을 포함하는 계약 DSL파일들이 'hello/BaseClass.java'를 기본 클래스로 사용하도록 지정
+// src/test/resources/contracts/hello 디렉토리도 포함됨
+baseClassMapping(".*hello.*", "hello.BaseClass")
+}
+}
+
+// ./gradlew contractTest 를 통해서 위에서 설정한 계약 파일을 테스트 (groovy파일)
+tasks.named('contractTest') {
+useJUnitPlatform()
+}
+```
+
+위처럼 `build.gradle` 내부에서 계약 설정을 할 수 있습니다.
+
+해당 계약 설정대로 테스트 클래스를 생성합니다.<br>
+`src\test\java\hello\BaseClass.java`
+```java
+@SpringBootTest(classes = ContractRestServiceApplication.class)
+public abstract class BaseClass {
+
+	@Autowired PersonRestController personRestController;
+
+	@MockBean PersonService personService;
+
+	@BeforeEach public void setup() {
+		RestAssuredMockMvc.standaloneSetup(personRestController);
+
+		Mockito.when(personService.findPersonById(1L))
+				.thenReturn(new Person(1L, "foo", "bee"));
+	}
+}
+```
+모든 계약은 이 기본 클래스를 사용합니다.
+
+계약 테스트 만들기
+```groovy
+/**
+ *  REST 서비스 계약
+ *
+ * 계약 테스트를 위한 절차
+ * - src/test/resources/contracts 디렉토리에 계약을 정의, Groovy 또는 yml 파일로
+ * - 계약 테스트의 기본 동작을 정의하는 Base Class를 작성 - 모킹, 초기설정
+ * - 터미널에서 ./gradlew contractTest 실행 ( 계약 테스트를 contractTest로 이름지었음 )
+ */
+import org.springframework.cloud.contract.spec.Contract
+
+Contract.make {
+    description "should return person by id=1"
+
+    // 해당 요청이 들어오면
+    request {
+        url "/person/1"
+        method GET()
+    }
+
+    // 아래의 결과를 리턴하도록 지정
+    // 이 계약에 의해서 body 데이터가 현재 파일의 설정대로 변경되어야 함
+    response {
+        status OK()
+        headers {
+            contentType applicationJson()
+        }
+        body (
+                id: 1,
+                name: "foo",
+                surname: "bee"
+        )
+    }
+}
+```
+설정한 테스트는 아래 커맨드를 통해 테스트 할 수 있습니다.
+
+기본 클래스의 Mock 설정과 테스트 계약 파일이 동일한 결과라면 테스트는 통과합니다.
+```
+$ ./gradlew contractTest
+```
+앞서 말했든 계약자가 요구사항을 위 같은 groovy 파일로 명시합니다.<br>
+프로듀서는 이러한 요구사항에 맞게 서비스를 만듭니다.<br>
+컨슈머의 요구사항에 맞추므로 프로듀서의 변경에 대한 영향을 파악하기 쉽습니다.<br>
+프로듀서는 모든 컨슈머의 요구사향에 맞춰 코드를 변경하므로 컨슈머들에게 부정적인 영향이 가는지 미리 파악할 수 있습니다.<br>
+프로듀서는 이러한 계약파일을 통과하는 스텁파일을 제공합니다. 컨슈머는 이 스텁을 통해 계약을 테스트할 수 있습니다.<br>
+이러한 계약파일은 프로듀서와 컨슈머가 미리 정한 중앙 저장소나, 프로듀서의 저장소등에 작성 가능합니다.<br>
+예를 들어 프로듀서가 컨슈머들의 계약 파일 경로를 자신의 설정파일에 추가해서 테스트할 수도 있습니다.
 </details>

@@ -134,7 +134,7 @@
         FROM (
         SELECT TO_NUMBER(TSO_BLDG_ADM_ID) AS A
         FROM TB_INF_BLDG TIB
-        ) AAA
+        ) AAAg
         WHERE ROWNUM <= 400000
         )
         WHERE RN >= 350000; -- 평균적으로 3.5초
