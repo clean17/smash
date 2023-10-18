@@ -4567,4 +4567,15 @@ $ ./gradlew contractTest
 프로듀서는 이러한 계약파일을 통과하는 스텁파일을 제공합니다. 컨슈머는 이 스텁을 통해 계약을 테스트할 수 있습니다.<br>
 이러한 계약파일은 프로듀서와 컨슈머가 미리 정한 중앙 저장소나, 프로듀서의 저장소등에 작성 가능합니다.<br>
 예를 들어 프로듀서가 컨슈머들의 계약 파일 경로를 자신의 설정파일에 추가해서 테스트할 수도 있습니다.
+
+이렇게 프로듀서가 컨슈머의 요구사항에 맞춘 서비스를 실행시키면 컨슈머는 해당 서비스로의 통신을 통해 자신들의 도메인을 만들 수 있습니다.<br>
+
+- `RestTemplate`을 이용한 요청
+```java
+	@RequestMapping("/message/{personId}")
+	String getMessage(@PathVariable("personId") Long personId) {
+        Person person = this.restTemplate.getForObject("http://localhost:8100/person/{personId}", Person.class, personId);
+        return "Hello " + person.getName();
+        }
+```
 </details>
