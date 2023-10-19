@@ -17,4 +17,9 @@ public class JSTLController {
     public String temp(){
         return "temp";
     }
+
+    @GetMapping(value = "/file")
+    public String file() {
+        return "file";
+    }
 }

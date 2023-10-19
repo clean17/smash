@@ -1,6 +1,6 @@
 server:
-#  port: 8080
-  port: 9999
+  port: 8080
+#  port: 9999
 
 spring:
   application:
@@ -11,7 +11,7 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
-  # 적용할 스키마 수동 설정
+  # 적용할 스키마 수동 설정 
   sql:
     init:
       schema-locations: classpath:schema-all.sql

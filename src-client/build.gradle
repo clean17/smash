@@ -127,8 +127,8 @@ dependencies {
 /*    // Vaadin // 24.1.10 버전은 자바11과 호환되지 않음 - 사용하려니 전체 웹팩을 다운받음
     implementation 'com.vaadin:vaadin-spring-boot-starter'*/
 
-    // thymeleaf
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    // thymeleaf.. 스프링 부트는 기본적으로 하나의 뷰 리졸버만 활성화
+//    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
     /************************* Spring Data ( Reactive 와 함께 사용 불가 )********************************/
 
