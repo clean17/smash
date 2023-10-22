@@ -1,4 +1,4 @@
-//package com.example.springbreaking.servlet.asyncMethod;
+//package com.example.multimodule.servlet.asyncMethod;
 //
 //import org.springframework.boot.SpringApplication;
 //import org.springframework.boot.autoconfigure.SpringBootApplication;

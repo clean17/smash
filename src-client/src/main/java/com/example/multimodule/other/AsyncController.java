@@ -1,13 +1,16 @@
 package com.example.multimodule.other;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.stereotype.Controller;
+
 import java.util.concurrent.*;
 
 /**
  * 어노테이션 없이 비동기
  */
-public class Async {
+@Controller
+@EnableAsync
+public class AsyncController {
 
     private static final ExecutorService executor = Executors.newFixedThreadPool(2);
 

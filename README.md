@@ -4579,3 +4579,175 @@ $ ./gradlew contractTest
         }
 ```
 </details>
+
+<details>
+  <summary> 비동기 </summary>
+
+## Async
+
+스프링에서는 비동기 처리를 위한 방법으로 여러가지 방법을 지원합니다.
+
+- `@EnableAsync`, `@Async`
+
+아래처럼  `@EnableAsync`을 이용한다면 메인 클래스와 같은 위치에 사용할 수 있습니다.<br>
+
+```java
+ @SpringBootApplication
+ @EnableAsync
+public class AsyncMethodApplication {
+}
+```
+또한 국소적으로 사용하고 싶다면 해당 빈에만 붙여 범위를 제한할 수 있습니다.
+```java
+@Controller
+@EnableAsync
+public class AsyncController {
+```
+
+또한 아래처럼 비동기 작업의 스레드풀의 설정을 직접할 수 있고 <br>
+비동기 메소드에서 발생한 예외를 처리하려면 `AsyncConfigurer`를 통해 비동기 예외 처리기를 명시적으로 제공해야 합니다.
+```java
+ @Configuration
+ @EnableAsync
+ public class AppConfig implements AsyncConfigurer {
+    
+    @Override
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(25);
+        executor.initialize();
+        return executor;
+    }
+
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+      return new CustomAsyncExceptionHandler();
+    }
+ }
+ 
+// 비동기 작업에 사용될 스레드풀의 세부사항을 설정 
+// AsyncConfigurer 인터페이스의 getAsyncUncaughtExceptionHandler를 오버라이딩해서 예외 처리
+```
+
+만약에 비동기 처리중 발생하는 예외를 전역핸들러가 처리하도록 한다면 아래의 방법을 이용합니다.
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleException(Exception e) {
+        // 여기에 전역 예외 처리 로직을 구현합니다.
+        return new ResponseEntity<>("Global Exception Handler: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
+//////// 이상 전역 핸들러 ///////////////
+
+public class AsyncExceptionHandler implements AsyncUncaughtExceptionHandler {
+
+  @Autowired
+  private GlobalExceptionHandler globalExceptionHandler;
+
+  @Override
+  public void handleUncaughtException(Throwable ex, Method method, Object... params) {
+    ResponseEntity<String> responseEntity = globalExceptionHandler.handleException((Exception) ex);
+    System.out.println("Async Exception Handler: " + responseEntity.getBody());
+  }
+}
+
+/////////// 이상 비동기 예외 핸들러 /////////////////
+////////// 전역 핸들러에 예외를 넘긴다. //////////////
+
+@Configuration
+@EnableAsync
+public class AsyncConfig implements AsyncConfigurer {
+
+  @Override
+  public Executor getAsyncExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(5);
+    executor.setMaxPoolSize(10);
+    executor.setQueueCapacity(25);
+    executor.initialize();
+    return executor;
+  }
+
+  @Override
+  public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+    return new AsyncExceptionHandler();
+  }
+}
+```
+
+`@EnableAsync` 어노테이션을 명시했다면 `@Async`가 적용된 메소드는 자동으로 비동기로 호출됩니다.<br>
+또한 `@Async`가 달린 메소드는 호출될 때마다 새로운 스레드에서 실행된다.
+```java
+  /**
+   * 비동기 프로그래밍의 결과를 모델링 + 결과 캡슐화 + 검색 기능 제공
+   * 비동기적으로 코드를 실행
+   * 비동기의 결과를 CompletableFuture객체에 넣어서 반환한다.
+   * @param user
+   * @return
+   * @throws InterruptedException
+   */
+  @Async
+  public CompletableFuture<User> findUser(String user) throws InterruptedException {
+    logger.info("Looking up " + user);
+    String url = String.format("https://api.github.com/users/%s", user);
+    User results = restTemplate.getForObject(url, User.class);
+    // Artificial delay of 1s for demonstration purposes
+    Thread.sleep(1000L);
+    return CompletableFuture.completedFuture(results);
+  }
+```
+` @Async` 를 이용한 메소드는 void로 실행할 수 있고 해당 메소드가 결과를 반환해야 한다면 `CompletableFuture`를 이용해서 반환합니다.
+
+또한 비동기의 결과를 처리하는 메소드를 제공합니다.
+```java
+/**
+   * CompletableFuture <- 비동기 결과 반환 .. Promise와 유사
+   *
+   * 비동기가 완료되면 실행시킬 코드는 아래처럼 만든다. ( + thenApply, thenAccept, thenRun )
+   * future.thenApply(result -> result + " from CompletableFuture!");
+   *
+   * 비동기 작업은 join 메소드를 이용해서 기다린다. ( join은 멀티스레드에서 기본적으로 사용 )
+   *
+   * 예외가 발생하면 아래처럼 처리 ( + handle, exceptionally, whenComplete )
+   * future.exceptionally(ex -> "An error occurred: " + ex.getMessage());
+   *
+   * 비동기가 완료되면 실행시킬 -> complete, completeExceptionally
+   * 비동기 연속 실행 -> thenApplyAsync, thenAcceptAsync
+   * @param args incoming main method arguments
+   * @throws Exception
+   */
+  @Override
+  public void run(String... args) throws Exception {
+    // Start the clock
+    long start = System.currentTimeMillis();
+
+    // 서비스의 요청마다 새로운 비동기 스레드 생성
+    // Kick of multiple, asynchronous lookups
+    CompletableFuture<User> page1 = gitHubLookupService.findUser("PivotalSoftware");
+    CompletableFuture<User> page2 = gitHubLookupService.findUser("CloudFoundry");
+    CompletableFuture<User> page3 = gitHubLookupService.findUser("Spring-Projects");
+
+    // 비동기 작업들이 모두 완료될 때까지 대기 -> allOf,  anyOf
+    // Wait until they are all done
+    CompletableFuture.allOf(page1,page2,page3).join();
+
+    // Print results, including elapsed time
+    logger.info("Elapsed time: " + (System.currentTimeMillis() - start));
+    logger.info("--> " + page1.get());
+    logger.info("--> " + page2.get());
+    logger.info("--> " + page3.get());
+
+  }
+
+```
+
+
+
+
+<details/>
