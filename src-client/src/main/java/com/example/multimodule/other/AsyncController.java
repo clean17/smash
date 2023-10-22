@@ -15,7 +15,7 @@ public class AsyncController {
     private static final ExecutorService executor = Executors.newFixedThreadPool(2);
 
 
-    // 방법 1 executor
+    // 방법 1 executor - 주기적 실행
     public void scheduleMethod() {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         executor.schedule(() -> {

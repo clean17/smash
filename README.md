@@ -4581,7 +4581,7 @@ $ ./gradlew contractTest
 </details>
 
 <details>
-  <summary> 비동기 </summary>
+  <summary> 비동기 처리 </summary>
 
 ## Async
 
@@ -4589,7 +4589,7 @@ $ ./gradlew contractTest
 
 - `@EnableAsync`, `@Async`
 
-아래처럼  `@EnableAsync`을 이용한다면 메인 클래스와 같은 위치에 사용할 수 있습니다.<br>
+ `@EnableAsync`는 보통 메인 클래스와 같은 위치에 사용할 수 있습니다.<br>
 
 ```java
  @SpringBootApplication
@@ -4747,7 +4747,99 @@ public class AsyncConfig implements AsyncConfigurer {
 
 ```
 
+- ExecutorService
+
+또다른 방법으로는 `ExecutorService` 을 이용하는 방법이 있습니다.
+
+주기적으로 어떤 메소드를 실행할때는 `ScheduledExecutorService`를 이용합니다.<br>
+이때 항상 메소드가 종료가 되면 가비지 컬렉터에 처리를 넘기지 않고 즉시 메모리를 정리하는 습관을 가지는게 좋습니다.
+```java
+public void scheduleMethod() {
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    executor.schedule(() -> {
+        // 실행하려는 코드
+    }, 1, TimeUnit.SECONDS);
+    executor.shutdown(); // 메모리 정리
+}
+```
+
+비동기적으로 다른 작업을 수행하는 코드입니다.
+```java
+public void executeTask() {
+    ExecutorService executorService = Executors.newFixedThreadPool(2);
+    executorService.submit(() -> {        
+        try {
+        // 비동기 작업
+        // 예외를 발생시키는 코드
+        throw new RuntimeException("작업 중 에러 발생");
+        } catch (RuntimeException e) {
+        // 예외 처리
+        }
+    });
+    executorService.shutdown();  // 스레드 풀을 종료
+}
+
+```
+
+- CompletableFuture
+
+JAVA8의 표준 라이브러리에 포함되어 있는 기능으로 특별한 설정없이 곧바로 사용할 수 있습니다.<br>
+`CompletableFuture.runAsync(Runnable)` 또는 `CompletableFuture.supplyAsync(Supplier)`를 사용하면 내부적으로 `ForkJoinPool.commonPool()`를 사용하는데 이는 JVM이 관리하므로 직접적으로 `shutdown`할 필요는 없습니다.<br>
+그러므로 단순하고 가벼운 작업이라면 `ForkJoinPool`에게 메모리 관리를 맡겨도 무리가 없습니다.
+```java
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            bldgMngService.getBldgDetail(bldgMngDTO);
+        });
+```
+
+여기서 비동기 작업의 완료된 후 다른 메소드를 호출 시 다른 스레드의 작업이 완료될 때까지 현재 스레드가 블로킹되는 `join`보다는 `thenAccept`,`thenApply`, `thenRun` 같은 방법을 이용합니다.
+```java
+CompletableFuture.runAsync(() -> {
+        // 비동기로 실행할 로직
+        }).thenAccept(result -> {
+        // 비동기 작업 결과를 처리하는 로직
+        });
+
+```
+예외가 발생한다면 처리하는 방법입니다.
+```java
+CompletableFuture.supplyAsync(() -> {
+    // 여기에서 예외가 발생할 수 있음
+    return someMethod();
+})
+.exceptionally(ex -> {
+    // 예외 처리 로직
+    return defaultValue;
+})
+.thenAccept(result -> {
+    // 정상 실행 로직
+});
+```
 
 
+## CompletableFuture vs ExecutorService
 
+> CompletableFuture
+
+- 장점: <br>
+메서드 체인을 사용하여 비동기 작업의 결과를 처리하고, 예외를 처리하며, 후속 작업을 쉽게 연결할 수 있습니다.<br>
+리턴 값이 있는 작업을 쉽게 처리할 수 있습니다.<br>
+`thenApply`, `thenAccept`, `thenRun` 등의 다양한 후속 작업 메서드를 제공합니다.<br>
+`allOf`, `anyOf` 같은 여러 비동기 작업을 조합하는 메서드를 제공합니다.<br>
+- 단점:<br>
+러닝 커브가 있을 수 있습니다. 즉, 익숙해지기까지 시간이 걸릴 수 있습니다.<br>
+Java 8부터 사용할 수 있어서, 더 오래된 자바 버전에서는 사용할 수 없습니다.<br>
+
+> ExecutorService
+
+- 장점:<br>
+자바 5부터 사용 가능하므로, 오래된 자바 버전과 호환됩니다.<br>
+간단한 비동기 작업을 빠르게 시작할 수 있습니다.<br>
+직관적이고 사용하기 쉽습니다.<br>
+- 단점:<br>
+작업의 결과를 처리하거나, 예외를 처리하는 것이 `CompletableFuture`에 비해 복잡할 수 있습니다.<br>
+후속 작업을 연결하거나, 여러 비동기 작업을 조합하는 것이 더 복잡할 수 있습니다.<br>
+결론
+만약 여러 비동기 작업을 조합하거나, 결과를 처리하는 복잡한 로직이 필요하다면 `CompletableFuture`를 사용하는 것이 좋습니다.<br>
+단순한 비동기 작업을 빠르게 처리하고 싶다면 `ExecutorService`를 사용할 수 있습니다.<br>
 <details/>
