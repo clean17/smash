@@ -122,6 +122,10 @@ dependencies {
     // cloud contract client
     testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
 
+    // 엑셀
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+
     /************************************ View *******************************************************/
 
 /*    // Vaadin // 24.1.10 버전은 자바11과 호환되지 않음 - 사용하려니 전체 웹팩을 다운받음

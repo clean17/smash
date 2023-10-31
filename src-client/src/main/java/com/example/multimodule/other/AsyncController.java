@@ -57,7 +57,7 @@ public class AsyncController {
     }
 
     //////////////////////// CompletableFuture + ExecutorService
-    ExecutorService executor = Executors.newFixedThreadPool(17);
+//    ExecutorService executor = Executors.newFixedThreadPool(17);
 //    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
 //        strList.parallelStream().forEach((item) -> {
 //            List<String> tempList = new ArrayList<>();
