@@ -4784,7 +4784,13 @@ public void executeTask() {
 - CompletableFuture
 
 JAVA8의 표준 라이브러리에 포함되어 있는 기능으로 특별한 설정없이 곧바로 사용할 수 있습니다.<br>
+
+CompletableFuture를 사용하여 비동기 작업을 수행할 때, 매번 새로운 스레드 풀을 생성하지 않습니다. <br>
+대신, CompletableFuture는 기본적으로 ForkJoinPool.commonPool()을 사용하여 비동기 작업을 수행합니다.<br>
+이 공통 풀은 애플리케이션 전체에서 공유되며, JVM이 시작될 때 한 번 생성됩니다.<br>
+
 `CompletableFuture.runAsync(Runnable)` 또는 `CompletableFuture.supplyAsync(Supplier)`를 사용하면 내부적으로 `ForkJoinPool.commonPool()`를 사용하는데 이는 JVM이 관리하므로 직접적으로 `shutdown`할 필요는 없습니다.<br>
+
 그러므로 단순하고 가벼운 작업이라면 `ForkJoinPool`에게 메모리 관리를 맡겨도 무리가 없습니다.
 ```java
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
