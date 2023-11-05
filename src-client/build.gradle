@@ -207,6 +207,9 @@ dependencies {
     // implementation -> 종속성이 실행 클래스, 컴파일 클래스에 추가됨. 실행 시 사용됨
     implementation 'javax.servlet:jstl'
     implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    // @ConfigurationProperties 사용
+    implementation 'org.springframework.boot:spring-boot-configuration-processor'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     // Mybatis
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.2.2'
 
