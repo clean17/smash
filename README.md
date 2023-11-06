@@ -4848,4 +4848,137 @@ Java 8부터 사용할 수 있어서, 더 오래된 자바 버전에서는 사�
 결론
 만약 여러 비동기 작업을 조합하거나, 결과를 처리하는 복잡한 로직이 필요하다면 `CompletableFuture`를 사용하는 것이 좋습니다.<br>
 단순한 비동기 작업을 빠르게 처리하고 싶다면 `ExecutorService`를 사용할 수 있습니다.<br>
-<details/>
+</details>
+
+<details>
+  <summary> 스레드풀 </summary>
+
+
+## 스레드풀
+
+자바에서 비동기 작업이 필요할 경우에는 스레드풀을 생성해야 합니다.<br>
+하지만 매번 스레드풀을 생성하고 제거한다면 자원이 소모되고 오버헤드가 많이 발생합니다.<br>
+
+따라서 애플리케이션 실행시 자동으로 스레드풀을 생성하고 시스템 자원을 효율적으로 사용합시다.<br>
+개발자가 코드를 통해서 만든 스레드풀은 WAS의 스레드풀과는 별도로 동작합니다.<br>
+이러한 스레드풀을 직접적으로 관리하는것은 여러 오류가능성을 내포하므로 권장하지 않습니다.<br>
+
+따라서 웹 애플리케이션에서 비동기 작업을 수행할 때는 가능한 WAS의 스레드 풀을 이용하는 것이 좋습니다.<br>
+스프링에서는 `@Async`를 통해서 내부적으로 스레드풀을 사용합니다.
+
+
+
+
+`ExecutorService`를 이용해서 비동기작업을 진행하는 경우 개발자가 직접 풀을 생성하고 관리해야합니다.<br>
+스프링환경이라면 `@Async` 또는 `TaskExecutor`같은 인터페이스를 통해 스프링이 관리하는 스레드풀을 이용하는것을 권장합니다.<br>
+
+## ThreadPoolTaskExecutor
+아래의 설정은 비동기 작업에 사용될 스레드풀을 생성하는 방법입니다.
+```java
+@Configuration
+@EnableAsync
+public class AsyncConfig extends AsyncConfigurerSupport {
+
+    @Override
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(50);
+        executor.setQueueCapacity(500);
+        executor.initialize();
+        return executor;
+    }
+}
+
+```
+`ThreadPoolTaskExecutor`을 이용해서 스레드풀을 생성하게 되면 이 스레드풀은 스프링이 관리하게 되며 <br>
+`@Async`어노테이션이 적용된 메소드가 호출될 때마다 이 스레드풀을 사용하여 비동기 작업을 진행합니다.<br>
+여러 번의 `@Async` 메소드 호출이 동시에 이루어지면 각 호출마다 별도의 스레드가 할당되어 동시에 실행됩니다.<br>
+
+`@Async` 어노테이션과 스레드 풀을 사용하면 스레드의 생성, 관리, 소멸 등을 Spring이 알아서 처리해주므로 자원을 효율적으로 관리할 수 있습니다.
+`@Async` 어노테이션을 사용하고 별도의 스레드 풀을 설정하지 않았다면, Spring은 `SimpleAsyncTaskExecutor`를 사용합니다.<br>
+이는 매번 스레드를 생성하므로 오버헤드가 발생합니다.<br>
+
+
+## AsyncConfigurer
+비동기 작업을 위한 `Executor`와 `AsyncUncaughtExceptionHandler`를 제공하는 메소드를 정의하는 인터페이스입니다.<br>
+이 인터페이스를 구현하면, `getAsyncExecutor()`와 `getAsyncUncaughtExceptionHandler()` 메소드를 오버라이드하여 커스텀 스레드 풀과 예외 핸들러를 제공할 수 있습니다.<br>
+`AsyncConfigurer` 인터페이스를 직접 구현하면 모든 메소드를 직접 구현해야 합니다.
+```java
+@Configuration
+@EnableAsync
+public class AsyncConfig implements AsyncConfigurer {
+
+    @Override
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(50);
+        executor.setQueueCapacity(500);
+        executor.initialize();
+        return executor;
+    }
+
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return new CustomAsyncExceptionHandler();
+    }
+}
+
+```
+## AsyncConfigurerSupport
+
+`AsyncConfigurer` 인터페이스를 구현한 추상 클래스입니다.<br>
+`getAsyncExecutor()` 메소드는 기본적으로 `SimpleAsyncTaskExecutor`를 반환합니다.<br>
+`getAsyncUncaughtExceptionHandler()` 메소드는 기본적으로 `null`을 반환합니다.<br>
+필요한 부분만 오버라이드하여 사용할 수 있으므로, 모든 메소드를 구현할 필요가 없습니다.
+
+```java
+@Configuration
+@EnableAsync
+public class AsyncConfig extends AsyncConfigurerSupport {
+
+    // 위와 동일 getAsyncExecutor()
+    // getAsyncUncaughtExceptionHandler()는 오버라이드하지 않아도 됩니다.
+}
+
+```
+## 초기 생성한 스레드풀을 이용
+```java
+@Autowired
+private TaskExecutor taskExecutor;
+
+public CompletableFuture<String> asyncMethod() {
+    return CompletableFuture.supplyAsync(() -> {
+        // Asynchronous task
+        return "Hello, World!";
+    }, taskExecutor);
+}
+
+```
+
+## 톰캣의 스레드풀
+이 스레드 풀은 HTTP 요청을 처리하기 위해 사용되며, 애플리케이션의 성능과 동시성을 관리하는데 중요한 역할을 합니다.<br>
+Tomcat 스레드 풀은 HTTP 요청을 처리하기 위한 것이며, 일반적으로 비동기 작업을 실행하기 위해 직접 사용하는 것은 권장되지 않습니다. <br>
+비동기 작업을 위해 별도의 스레드 풀을 생성하는 것이 좋습니다.
+```yml
+server.tomcat.max-threads=200
+server.tomcat.min-spare-threads=10
+```
+`Callable`을 반환하는 컨트롤러 메소드를 사용하면, Spring MVC는 요청을 비동기적으로 처리하며, 내부적으로 Tomcat의 스레드 풀을 사용합니다.
+```java
+@RequestMapping("/async")
+public Callable<String> asyncMethod() {
+    return () -> {
+        // 비동기 작업
+        return "Hello, World!";
+    };
+}
+
+```
+
+
+
+
+
+</details>
