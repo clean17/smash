@@ -4780,7 +4780,36 @@ public void executeTask() {
 }
 
 ```
+- invokeAll<br>
 
+모든 작업이 완료될 때까지 기다립니다.
+```java
+ExecutorService executorService = Executors.newFixedThreadPool(10);
+List<Callable<String>> tasks = new ArrayList<>();
+
+// 작업들을 정의합니다.
+tasks.add(() -> "Task 1");
+tasks.add(() -> "Task 2");
+// ... 더 많은 작업들을 추가할 수 있습니다 ...
+
+try {
+    // 모든 작업을 실행하고 각 작업의 결과를 기다립니다.
+    List<Future<String>> futures = executorService.invokeAll(tasks);
+
+    // 각 작업의 결과를 출력합니다.
+    for (Future<String> future : futures) {
+        // get() 메소드는 작업의 결과가 준비될 때까지 블록됩니다.
+        System.out.println(future.get());
+    }
+} catch (InterruptedException | ExecutionException e) {
+    // 예외 처리
+    e.printStackTrace();
+} finally {
+    // ExecutorService를 종료합니다.
+    executorService.shutdown();
+}
+
+```
 - CompletableFuture
 
 JAVA8의 표준 라이브러리에 포함되어 있는 기능으로 특별한 설정없이 곧바로 사용할 수 있습니다.<br>
@@ -4977,8 +5006,303 @@ public Callable<String> asyncMethod() {
 
 ```
 
+## 트랜잭션
+
+`@Tranjactional`이 걸린 메소드에서 `@Async`메소드나 비동기 작업을 호출한다면 각각의 스레드를 별도의 독립된 트랜잭션에서 실행됩니다.<br>
+트랜잭션은 하나의 스레드에서만 동작하므로 다른 스레드에서 발생한 오류로 호출한 스레드가 롤백되지 않습니다.<br>
+```java
+@Service
+public class MyService {
+
+    @Transactional
+    public void transactionalMethod() {
+        asyncMethod1();
+        asyncMethod2();
+        // ... 다른 로직
+    }
+
+    @Async
+    public void asyncMethod1() {
+        // 비동기로 실행될 로직
+    }
+
+    @Async
+    public void asyncMethod2() {
+        // 비동기로 실행될 로직
+    }
+}
+
+```
+
+## ForkJoinPool
+Java 7에서 도입된 특별한 종류의 스레드 풀로, 주로 병렬 계산 작업을 위해 설계되었습니다.<br>
+`ForkJoinPool`은 작업을 더 작은 부분으로 나누고, 이를 병렬로 처리한 후 결과를 합치는 fork/join 프레임워크를 구현합니다.<br>
+
+`CompletableFuture`와 같은 비동기 프로그래밍을 위한 클래스들은 내부적으로 `ForkJoinPool.commonPool()`을 사용하여 비동기 작업을 수행할 수 있습니다.<br>
+이 공통 풀은 애플리케이션 전체에서 공유되며, JVM이 시작될 때 한 번 생성됩니다.<br>
+따라서 별도로 스레드 풀을 생성하지 않아도 됩니다.<br>
+
+`CompletableFuture` 작업에 대해 별도의 스레드 풀을 사용하고 싶다면
+```java
+Executor myThreadPool = Executors.newFixedThreadPool(10);
+CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+    // 비동기 작업
+    return "Hello, World!";
+}, myThreadPool);
+
+```
+
+## CompletableFuture, @Async 차이
+`CompletableFuture`는 기본적으로 `ForkJoinPool.commonPool()`을 사용하여 비동기 작업을 수행합니다. <br>
+따라서 별도로 스레드 풀을 생성하지 않아도 됩니다.<br>
+필요에 따라 `Executor` 인터페이스를 구현하는 커스텀 스레드 풀을 제공하여 비동기 작업을 수행할 수 있습니다.(바로 위 코드)<br>
+
+`@Async`를 사용하려면 `@EnableAsync` 어노테이션을 통해 비동기 작업을 활성화해야 하며, `AsyncConfigurer` 인터페이스를 구현하여 커스텀 스레드 풀을 설정할 수 있습니다.
+스레드 풀을 별도로 설정하지 않으면, Spring은 기본적으로 `SimpleAsyncTaskExecutor`를 사용합니다. <br>
+이는 각 비동기 작업마다 새로운 스레드를 생성하는 방식으로 작동합니다.<br>
+
+</details>
+
+<details>
+  <summary> Batch </summary>
+
+## Batch / preparedStatement
+
+배치는 한번의 네트워크 호출로 여러 SQL문을 DB에 보내 오버헤드를 줄입니다.<br>
+실제로 유사한 여러 SQL에 주로 사용합니다.<br>
+
+`preparedStatement`는 SQL문을 미리 컴파일하여 시간을 줄입니다.<br>
+동일한 쿼리를 여러 List로 호출할때 주로 사용합니다<br>
+SQL 주입 공격방지에도 도움이 됩니다.
+
+따라서 두가지를 조합하면 최상의 성능을 경험할 수 있습니다.
+
+`spring-boot-starter-jdbc` 또는 `spring-boot-starter-jpa`의존성을 추가하면 `BatchPreparedStatementSetter`를 이용할 수 있습니다.
+
+## BatchPreparedStatementSetter
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+
+@Repository
+public class YourRepository {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public int[] batchInsert(List<YourDomainClass> yourDomainClassList) {
+        String sql = "INSERT INTO your_table (column1, column2, column3) VALUES (?, ?, ?)";
+
+        return jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                YourDomainClass yourDomainClass = yourDomainClassList.get(i);
+                ps.setString(1, yourDomainClass.getProperty1());
+                ps.setString(2, yourDomainClass.getProperty2());
+                ps.setString(3, yourDomainClass.getProperty3());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return yourDomainClassList.size();
+            }
+        });
+    }
+}
+
+```
+이 방법은 직접 DB드라이버를 통해 커넥션을 생성하고 `preparedStatement`에 쿼리를 쌓아서 커밋하는것보다 15% 정도 빠릅니다.(주관적 의견)
+</details>
+
+<details>
+ <summary>커스텀 트랜잭션</summary>
 
 
+
+이걸 만든 이유는 하나의 트랜잭션으로 여러 비동기작업을 묶기위함입니다.<br>
+스레드에서 시작한 작업은 별도의 트랜잭션을 가지게 되지만 몇천만건의 데이터를 다루는 와중 다중 스레드로 작업을 맡기고 모든 스레드가 오류가 없다면 커밋을 하는게 어떨까라는 생각에서 출발했습니다.<br>
+
+## PlatformTransactionManager
+`PlatformTransactionManager`는 스프링의 트랜잭션 관리를 위한 핵심 인터페이스입니다.<br>
+이 인터페이스를 통해 트랜잭션을 시작, 커밋, 롤백하는 낮은 수준의 제어를 할 수 있습니다.<br>
+`PlatformTransactionManager`를 사용하는 경우, 일반적으로 트랜잭션 코드를 명시적으로 작성해야 하며, <br>
+이는 코드의 복잡성을 증가시킬 수 있습니다.<br>
+
+
+```java
+@Service
+public class MultiThreadedBatchService {
+
+    private final PlatformTransactionManager transactionManager;
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public MultiThreadedBatchService(PlatformTransactionManager transactionManager,
+                                     JdbcTemplate jdbcTemplate) {
+        this.transactionManager = transactionManager;
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public void executeBatchInMultipleThreads(List<MyObject> objects) {
+        TransactionDefinition def = new DefaultTransactionDefinition();
+        TransactionStatus status = transactionManager.getTransaction(def);
+
+        try {
+            // 스레드 풀 생성
+            ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+            // 스레드 작업 정의
+            Callable<Boolean> task1 = () -> {
+                jdbcTemplate.batchUpdate(/* 첫 번째 배치 작업 */);
+                return true;
+            };
+
+            Callable<Boolean> task2 = () -> {
+                jdbcTemplate.batchUpdate(/* 두 번째 배치 작업 */);
+                return true;
+            };
+
+            // 작업 실행
+            List<Future<Boolean>> results = executorService.invokeAll(Arrays.asList(task1, task2));
+
+            // 결과 확인
+            for (Future<Boolean> result : results) {
+                if (!result.get()) {
+                    throw new Exception("Batch execution failed");
+                }
+            }
+
+            // 모든 작업이 성공적으로 완료되면 커밋
+            transactionManager.commit(status);
+        } catch (Exception e) {
+            // 오류 발생 시 롤백
+            transactionManager.rollback(status);
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+```
+모든 작업이 성공적이면 트랜잭션을 커밋합니다.<br>
+작업 중 하나라도 실패하면 트랜잭션을 롤백합니다.<br>
+
+다중 스레드 작업을 위한 메소드에서는 `@Transactional` 어노테이션을 제거하고, <br>
+`PlatformTransactionManager`를 사용하여 명시적으로 트랜잭션을 관리합니다.<br>
+이렇게 하면 해당 메소드 내에서 생성된 스레드들이 모두 같은 트랜잭션 컨텍스트를 공유하게 되어,<br>
+모든 스레드의 작업이 성공적으로 완료되었을 때만 커밋하고, 하나라도 실패하면 롤백하는 로직을 구현할 수 있습니다.
+
+
+## TransactionTemplate
+
+`TransactionTemplate`는 `PlatformTransactionManager`를 기반으로 하며, <br>
+트랜잭션 관리를 좀 더 간편하게 할 수 있도록 도와주는 템플릿입니다.<br>
+이 템플릿은 트랜잭션 코드를 콜백 형태로 제공하게 하여 코드의 복잡성을 줄여줍니다.<br>
+`TransactionTemplate`은 `PlatformTransactionManager`보다 높은 수준의 추상화를 제공하며, 간결한 코드를 작성할 수 있도록 도와줍니다.<br>
+
+```java
+@Service
+public class TransactionalAsyncService {
+
+    private final TransactionTemplate transactionTemplate;
+
+    @Autowired
+    public TransactionalAsyncService(PlatformTransactionManager transactionManager) {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
+
+    public void executeAsyncOperations() {
+        List<Future<String>> futures = new ArrayList<>();
+
+        for (int i = 0; i < 6; i++) {
+            Future<String> future = asyncOperation(i);
+            futures.add(future);
+        }
+
+        for (Future<String> future : futures) {
+            try {
+                // get() 메소드는 작업이 완료될 때까지 블록됩니다.
+                future.get();
+            } catch (Exception e) {
+                // 여기서 예외를 처리하고, 필요한 경우 롤백을 수행합니다.
+                throw new CustomException("Failed to execute async operation", e);
+            }
+        }
+    }
+
+    @Async
+    public Future<String> asyncOperation(int index) {
+        return transactionTemplate.execute(status -> {
+            // 여기서 수행할 비동기 작업
+            // 필요한 경우 예외를 던져 롤백을 유발합니다.
+            if (someCondition) {
+                status.setRollbackOnly();
+            }
+            return new AsyncResult<>("Success");
+        });
+    }
+}
+
+```
+
+모든 작업이 완료된 후에 `future.get()`을 호출하여 각 작업의 결과를 확인하고, 예외가 발생하면 롤백을 수행합니다.<br>
+그러나 이는 실제로 전체 트랜잭션을 롤백하는 것이 아니라 각 작업에 대해 롤백을 수행하는 것입니다<br>
+
+
+## Spring Batch
+그러다가 스프링 배치를 통해서도 위와 유사한 기능을 구현할 수 있다고 해서 메모합니다.(추후 알아볼 것)
+```java
+@Configuration
+@EnableBatchProcessing
+public class BatchConfig {
+
+    @Autowired
+    private JobBuilderFactory jobs;
+
+    @Autowired
+    private StepBuilderFactory steps;
+
+    @Bean
+    public Job job(Step step) {
+        return jobs.get("myJob")
+                .start(step)
+                .build();
+    }
+
+    @Bean
+    public Step step(ItemReader<MyInput> reader,
+                     ItemProcessor<MyInput, MyOutput> processor,
+                     ItemWriter<MyOutput> writer) {
+        return steps.get("myStep")
+                .<MyInput, MyOutput>chunk(10)
+                .reader(reader)
+                .processor(processor)
+                .writer(writer)
+                .faultTolerant() // 예외 처리를 위한 설정
+                .skipPolicy(new AlwaysSkipItemSkipPolicy()) // 어떤 예외든지 스킵하도록 정책 설정
+                .build();
+    }
+
+    // Define reader, processor, and writer beans...
+}
+
+```
+
+위의 설정은 스프링 배치 Job을 구성합니다. <br>
+스프링 배치는 `JobRepository`를 사용하여 각 `chunk`의 트랜잭션을 관리합니다.<br>
+`JobRepository`는 배치 작업의 메타데이터를 저장하고, 각 `chunk`의 커밋과 롤백을 처리합니다.
+
+`chunk` 메소드는 한 번에 처리할 항목의 수를 정의합니다.<br>
+`reader`는 데이터를 읽고, `processor`는 데이터를 처리하며, `writer`는 모든 처리가 완료된 후 데이터를 쓰는 역할을 합다.<br>
+
+모든 작업이 성공적으로 완료되면 `writer`가 최종 커밋을 수행합니다. <br>
+성공했을 때 커밋하는 것은 스프링 배치의 기본 동작입니다.<br>
+만약 중간에 실패가 발생하면, 해당 청크는 롤백되고 재시도 또는 스킵 로직이 적용될 수 있습니다.
 
 
 </details>
