@@ -5306,3 +5306,39 @@ public class BatchConfig {
 
 
 </details>
+
+<details>
+  <summary> Stream Fetch</summary>
+
+## 대용량 데이터 조회
+
+테이블에 넣은 데이터를 조회할 시 100만건의 데이터를 조회에서 처리하는 로직을 만드려는 경우 <br>
+100만건의 데이터르 한번에 조회한다면 OutOfMemory를 만나게 될 가능성이 농후합니다.<br>
+
+이럴때 사용하면 좋은 대용량의 데이터를 조회하는 방법들을 소개합니다.
+
+- Mybatis + Cursor
+Mybatis를 사용중이라면 간단히 몇가지 코드 수정으로 대용량의 데이터를 일정한 메모리만 사용함으로서 조회할 수 있습니다.
+```java
+import org.apache.ibatis.cursor.Cursor;
+
+public void getExcelData(DTO dto){
+    try (Cursor<CamelMap> ids = excelBatchMapper.getFolderData(dto)) {
+        int cnt = 0;
+        for (CamelMap id : ids) {
+            System.out.println("카운트 " + ++cnt );
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+```
+기존의  `List<?>`타입을 `Cursor<?>` 타입으로 변경하고 메모리에 저장하지 않고 소모하면 됩니다.
+
+`fetchSize` 와 함께 사용하면 더욱 빠르게 조회가 가능합니다.
+```sql
+<select id="getFolderData" parameterType="map" resultType="camelMap" fetchSize="1000">
+    조회 쿼리
+</select>
+```
+</details>
