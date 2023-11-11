@@ -4416,7 +4416,7 @@ $ ./gradlew :src-client:bootRun
 </details>
 
 <details>
-  <summary>Spring Clout Contract</summary>
+  <summary>Spring Cloud Contract</summary>
 
 ## Spring Cloud Contract
 
@@ -4587,8 +4587,10 @@ $ ./gradlew contractTest
 
 스프링에서는 비동기 처리를 위한 방법으로 여러가지 방법을 지원합니다.
 
-- `@EnableAsync`, `@Async`
+###  @Async, @EnableAsync
 
+`@Async` 어노테이션을 메소드에 붙이면 해당 메소드는 비동기적으로 실행됩니다.<br>
+`@Async` 를 적용시키기 위해서는  `@EnableAsync`를 사용해야합니다.<br>
  `@EnableAsync`는 보통 메인 클래스와 같은 위치에 사용할 수 있습니다.<br>
 
 ```java
@@ -4603,8 +4605,10 @@ public class AsyncMethodApplication {
 @EnableAsync
 public class AsyncController {
 ```
+`@Async` 어노테이션을 사용하고 별도의 스레드 풀을 설정하지 않았다면, Spring은 `SimpleAsyncTaskExecutor`를 생성해 비동기 작업을 처리합니다.<br>
+이는 매번 스레드를 생성하므로 오버헤드가 발생합니다.<br>
 
-또한 아래처럼 비동기 작업의 스레드풀의 설정을 직접할 수 있고 <br>
+이를 보완하기 위해서 아래처럼 비동기 작업의 스레드풀의 설정을 직접할 수 있고 <br>
 비동기 메소드에서 발생한 예외를 처리하려면 `AsyncConfigurer`를 통해 비동기 예외 처리기를 명시적으로 제공해야 합니다.
 ```java
  @Configuration
@@ -4682,7 +4686,13 @@ public class AsyncConfig implements AsyncConfigurer {
 ```
 
 `@EnableAsync` 어노테이션을 명시했다면 `@Async`가 적용된 메소드는 자동으로 비동기로 호출됩니다.<br>
-또한 `@Async`가 달린 메소드는 호출될 때마다 새로운 스레드에서 실행된다.
+또한 `@Async`가 달린 메소드는 호출될 때마다 새로운 스레드에서 실행된다.<br>
+이때 스레드풀을 만들지 않았다면 매번 새로운 `SimpleAsyncTaskExecutor` 가 생성되어 작업이 진행됩니다.
+
+---
+
+### CompletableFuture 사용
+
 ```java
   /**
    * 비동기 프로그래밍의 결과를 모델링 + 결과 캡슐화 + 검색 기능 제공
@@ -4702,9 +4712,10 @@ public class AsyncConfig implements AsyncConfigurer {
     return CompletableFuture.completedFuture(results);
   }
 ```
+
 ` @Async` 를 이용한 메소드는 void로 실행할 수 있고 해당 메소드가 결과를 반환해야 한다면 `CompletableFuture`를 이용해서 반환합니다.
 
-또한 비동기의 결과를 처리하는 메소드를 제공합니다.
+또한 `CompletableFuture`는 비동기의 결과를 처리하는 메소드를 제공합니다.
 ```java
 /**
    * CompletableFuture <- 비동기 결과 반환 .. Promise와 유사
@@ -4746,13 +4757,16 @@ public class AsyncConfig implements AsyncConfigurer {
   }
 
 ```
+`CompletableFuture`를 사용할때 `@Async`와 함께 사용하지 않고 별도로 사용할 수 있습니다.<br>
+`CompletableFuture`를 사용한다면 JVM이 처음 실행될 때 생성된 `ForkJoinPool`을 이용하여 비동기 작업을 진행합니다.<br>
+즉, 별도로 스레드풀을 만들지 않아도 됩니다. 물론 만들어 사용해도 됩니다.
 
-- ExecutorService
+### ExecutorService 사용
 
 또다른 방법으로는 `ExecutorService` 을 이용하는 방법이 있습니다.
 
 주기적으로 어떤 메소드를 실행할때는 `ScheduledExecutorService`를 이용합니다.<br>
-이때 항상 메소드가 종료가 되면 가비지 컬렉터에 처리를 넘기지 않고 즉시 메모리를 정리하는 습관을 가지는게 좋습니다.
+이때 항상 메소드가 종료가 되면 가비지 컬렉터에 처리를 넘기지 않고 즉시 메모리를 정리하는 습관을 가지는게 좋습니다. (`shutdown`)
 ```java
 public void scheduleMethod() {
     ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -4763,7 +4777,7 @@ public void scheduleMethod() {
 }
 ```
 
-비동기적으로 다른 작업을 수행하는 코드입니다.
+`ExecutorService`로 비동기적으로 다른 작업을 수행하는 코드입니다.
 ```java
 public void executeTask() {
     ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -4780,9 +4794,9 @@ public void executeTask() {
 }
 
 ```
-- invokeAll<br>
 
-모든 작업이 완료될 때까지 기다립니다.
+
+모든 비동기 작업이 완료될 때까지 기다리는 방법들에는 `invokeAll`, `Future`, `CountDownLatch`, `CompletionService`, `awaitTermination` 등이 있습니다.
 ```java
 ExecutorService executorService = Executors.newFixedThreadPool(10);
 List<Callable<String>> tasks = new ArrayList<>();
@@ -4815,25 +4829,25 @@ try {
 JAVA8의 표준 라이브러리에 포함되어 있는 기능으로 특별한 설정없이 곧바로 사용할 수 있습니다.<br>
 
 CompletableFuture를 사용하여 비동기 작업을 수행할 때, 매번 새로운 스레드 풀을 생성하지 않습니다. <br>
-대신, CompletableFuture는 기본적으로 ForkJoinPool.commonPool()을 사용하여 비동기 작업을 수행합니다.<br>
+대신, CompletableFuture는 기본적으로 `ForkJoinPool.commonPool()`을 사용하여 비동기 작업을 수행합니다.<br>
 이 공통 풀은 애플리케이션 전체에서 공유되며, JVM이 시작될 때 한 번 생성됩니다.<br>
 
 `CompletableFuture.runAsync(Runnable)` 또는 `CompletableFuture.supplyAsync(Supplier)`를 사용하면 내부적으로 `ForkJoinPool.commonPool()`를 사용하는데 이는 JVM이 관리하므로 직접적으로 `shutdown`할 필요는 없습니다.<br>
 
 그러므로 단순하고 가벼운 작업이라면 `ForkJoinPool`에게 메모리 관리를 맡겨도 무리가 없습니다.
 ```java
-        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            bldgMngService.getBldgDetail(bldgMngDTO);
-        });
+CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+    bldgMngService.getBldgDetail(bldgMngDTO);
+});
 ```
 
 여기서 비동기 작업의 완료된 후 다른 메소드를 호출 시 다른 스레드의 작업이 완료될 때까지 현재 스레드가 블로킹되는 `join`보다는 `thenAccept`,`thenApply`, `thenRun` 같은 방법을 이용합니다.
 ```java
 CompletableFuture.runAsync(() -> {
-        // 비동기로 실행할 로직
-        }).thenAccept(result -> {
-        // 비동기 작업 결과를 처리하는 로직
-        });
+    // 비동기로 실행할 로직
+}).thenAccept(result -> {
+    // 비동기 작업 결과를 처리하는 로직
+});
 
 ```
 예외가 발생한다면 처리하는 방법입니다.
