@@ -5134,6 +5134,46 @@ public class YourRepository {
 이 방법은 직접 DB드라이버를 통해 커넥션을 생성하고 `preparedStatement`에 쿼리를 쌓아서 커밋하는것보다 15% 정도 빠릅니다.(주관적 의견)
 </details>
 
+
+
+<details>
+  <summary> Stream Fetch</summary>
+
+## 대용량 데이터 조회
+
+테이블에 넣은 데이터를 조회할 시 100만건의 데이터를 조회에서 처리하는 로직을 만드려는 경우 <br>
+100만건의 데이터를 한번에 조회한다면 OutOfMemory를 만나게 될 가능성이 농후합니다.<br>
+
+이럴때 사용하면 좋은 대용량의 데이터를 조회하는 방법들을 소개합니다.
+
+- Mybatis + Cursor
+Mybatis를 사용중이라면 간단히 몇가지 코드 수정으로 대용량의 데이터를 일정한 메모리만 사용함으로서 조회할 수 있습니다.
+```java
+import org.apache.ibatis.cursor.Cursor;
+
+public void getExcelData(DTO dto){
+    try (Cursor<CamelMap> ids = excelBatchMapper.getFolderData(dto)) {
+        int cnt = 0;
+        for (CamelMap id : ids) {
+            System.out.println("카운트 " + ++cnt );
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+```
+기존의  `List<?>`타입을 `Cursor<?>` 타입으로 변경하고 메모리에 저장하지 않고 소모하면 됩니다.
+
+`fetchSize` 와 함께 사용하면 더욱 빠르게 조회가 가능합니다.
+```sql
+<select id="getFolderData" parameterType="map" resultType="camelMap" fetchSize="1000">
+    조회 쿼리
+</select>
+```
+</details>
+
+
+
 <details>
  <summary>커스텀 트랜잭션</summary>
 
@@ -5211,7 +5251,48 @@ public class MultiThreadedBatchService {
 이렇게 하면 해당 메소드 내에서 생성된 스레드들이 모두 같은 트랜잭션 컨텍스트를 공유하게 되어,<br>
 모든 스레드의 작업이 성공적으로 완료되었을 때만 커밋하고, 하나라도 실패하면 롤백하는 로직을 구현할 수 있습니다.
 
+- 실제 사용했을 때
+```java
+        // CountDownLatch -다른 스레드의 작업을 기다림
+        CountDownLatch latch = new CountDownLatch(files.length);
+        // Atomic - 동시성 제어
+        AtomicBoolean allSuccess = new AtomicBoolean(true);
 
+        // JVM의 ForkJoinPool 사용
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            // batch 작업의 트랜잭션을 설정
+            TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
+            try {
+                for (int i = 0; i < files.length; i++) {
+                    MultipartFile file = files[i];
+                    
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+                        // 비동기 작업
+                    } catch (IOException e) {
+                        // IO 예외 처리
+                    } finally {
+                        latch.countDown();
+                    }
+                }
+                transactionManager.commit(status); // 모든 batch작업이 성공하면 커밋
+            } catch (Exception e) {
+                transactionManager.rollback(status); // 실패하면 롤백
+                throw e;
+            }
+        }).exceptionally(ex ->{
+            // 비동기 작업 실패 예외 처리
+            ex.printStackTrace();
+            return null;
+        }).thenAccept((result) -> {
+            try {
+                // 모든 스레드의 작업이 완료될 때까지 기다림
+                latch.await();
+                // 후처리 
+            } catch (Exception e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+```
 ## TransactionTemplate
 
 `TransactionTemplate`는 `PlatformTransactionManager`를 기반으로 하며, <br>
@@ -5319,40 +5400,4 @@ public class BatchConfig {
 만약 중간에 실패가 발생하면, 해당 청크는 롤백되고 재시도 또는 스킵 로직이 적용될 수 있습니다.
 
 
-</details>
-
-<details>
-  <summary> Stream Fetch</summary>
-
-## 대용량 데이터 조회
-
-테이블에 넣은 데이터를 조회할 시 100만건의 데이터를 조회에서 처리하는 로직을 만드려는 경우 <br>
-100만건의 데이터르 한번에 조회한다면 OutOfMemory를 만나게 될 가능성이 농후합니다.<br>
-
-이럴때 사용하면 좋은 대용량의 데이터를 조회하는 방법들을 소개합니다.
-
-- Mybatis + Cursor
-Mybatis를 사용중이라면 간단히 몇가지 코드 수정으로 대용량의 데이터를 일정한 메모리만 사용함으로서 조회할 수 있습니다.
-```java
-import org.apache.ibatis.cursor.Cursor;
-
-public void getExcelData(DTO dto){
-    try (Cursor<CamelMap> ids = excelBatchMapper.getFolderData(dto)) {
-        int cnt = 0;
-        for (CamelMap id : ids) {
-            System.out.println("카운트 " + ++cnt );
-        }
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-}
-```
-기존의  `List<?>`타입을 `Cursor<?>` 타입으로 변경하고 메모리에 저장하지 않고 소모하면 됩니다.
-
-`fetchSize` 와 함께 사용하면 더욱 빠르게 조회가 가능합니다.
-```sql
-<select id="getFolderData" parameterType="map" resultType="camelMap" fetchSize="1000">
-    조회 쿼리
-</select>
-```
 </details>
