@@ -4684,7 +4684,7 @@ public class AsyncConfig extends AsyncConfigurerSupport {
 
 `ExecutorService`는 java5 에서 생긴 기능으로 비동기 작업에 사용될 스레드풀부터 언제 종료할지 커스텀하게 구현이 가능합니다.<br>
 이때 비동기 작업이 종료되면 가비지 컬렉터에 처리를 넘기지 않고 즉시 메모리를 정리하는 습관을 가지는게 좋습니다. (`shutdown`)
-
+`ExecutorService`의 작업 결과로 `Future`객체를 반환하며 작업 도중에 결과를 가져올 수 없고 연속적인 처리가 어렵습니다.
 
 아래는 `ExecutorService`를 이용한 비동기 작업의 예입니다.
 ```java
@@ -4729,56 +4729,118 @@ public class AsyncConfig {
     }
 }
 
-@Service
-public class MyService {
-  private final TaskExecutor taskExecutor;
-
-  @Autowired
-  public MyService(TaskExecutor taskExecutor) {
-    this.taskExecutor = taskExecutor;
-  }
-
-  public void executeAsyncTask(Runnable task) {
-    taskExecutor.execute(task);
-  }
-}
 ```
-## 비동기 작업 후처리
-모든 비동기 작업이 완료될 때까지 기다리는 방법들에는 `invokeAll`, `Future`, `CountDownLatch`, `CompletionService`, `awaitTermination` 등이 있습니다.
+비동기 작업의 결과를 기다리기 위해서 주로 `Future.get()`를 이용합니다. (블로킹)
 ```java
-ExecutorService executorService = Executors.newFixedThreadPool(10);
-List<Callable<String>> tasks = new ArrayList<>();
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-// 작업들을 정의합니다.
-tasks.add(() -> "Task 1");
-tasks.add(() -> "Task 2");
-// ... 더 많은 작업들을 추가할 수 있습니다 ...
+public class FutureExample {
+    public static void main(String[] args) {
+        // ExecutorService 생성
+        ExecutorService executor = Executors.newSingleThreadExecutor();
 
-try {
-    // 모든 작업을 실행하고 각 작업의 결과를 기다립니다.
-    List<Future<String>> futures = executorService.invokeAll(tasks);
+        // 비동기 작업을 실행하고 Future 객체를 반환받음
+        Future<String> future = executor.submit(() -> {
+            // 시간이 걸리는 작업을 가정
+            Thread.sleep(2000);
+            return "결과값";
+        });
 
-    // 각 작업의 결과를 출력합니다.
-    for (Future<String> future : futures) {
-        // get() 메소드는 작업의 결과가 준비될 때까지 블록됩니다.
-        System.out.println(future.get());
+        try {
+            // 비동기 작업이 완료될 때까지 기다린 후 결과를 받음
+            String result = future.get(); // 이 부분에서 블록됨
+            System.out.println("비동기 작업 결과: " + result);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // ExecutorService 종료
+            executor.shutdown();
+        }
     }
-} catch (InterruptedException | ExecutionException e) {
-    // 예외 처리
-    e.printStackTrace();
-} finally {
-    // ExecutorService를 종료합니다.
-    executorService.shutdown();
 }
 
 ```
+## CompletableFuture
 
-스프링환경이라면 `@Async` 또는 `TaskExecutor`같은 인터페이스를 통해 스프링이 관리하는 스레드풀을 이용하는것을 권장합니다.<br>
+`CompletableFuture`는 Java 8에서 도입된 클래스로, 비동기 프로그래밍을 지원합니다.<br>
+이 클래스는 `Future` 인터페이스를 구현하고 확장하여, 더 유연하고 사용하기 쉬운 API를 제공합니다.
 
+`ExecutorService` 에서 지원하지 않는 체인 형태로 연속적인 처리가 가능합니다.<br>
+`thenCombine`, `thenCompose` 같은 메소드를 조합해 `CompletableFuture`의 객체를 쉽게 조합할 수 있습니다.<br>
+`CompletableFuture`은 블로킹 방식(`get()`, `join()`)이와에도 논블로킹 방식(`thenApplyAsync`, `thenAcceptAsync`)을 지원합니다.<br>
 
+`CompletableFuture`를 사용한다면 JVM이 처음 실행될 때 생성된 `ForkJoinPool.commonPool()`을 이용하여 비동기 작업을 진행합니다.<br>
+즉, 별도로 스레드풀을 만들지 않아도 됩니다. 물론 만들어 사용해도 됩니다.
 
+`CompletableFuture.runAsync(Runnable)` 또는 `CompletableFuture.supplyAsync(Supplier)`를 사용하면 내부적으로 `ForkJoinPool.commonPool()`를 사용하는데 이는 JVM이 관리하므로 직접적으로 `shutdown`할 필요는 없습니다.<br>
+
+아래처럼 `@Async` 비동기 작업의 결과를 `CompletableFuture`객체에 넣어서 반환할 수 있습니다.
+```java
+  /**
+   * 비동기의 결과를 CompletableFuture객체에 넣어서 반환한다.
+   */
+  @Async
+  public CompletableFuture<User> findUser(String user) throws InterruptedException {
+    String url = String.format("https://api.github.com/users/%s", user);
+    // 요청 후 페이로드를 객체에 담는다.
+    User results = restTemplate.getForObject(url, User.class);
+    // 비동기 작업을 가정
+    Thread.sleep(1000L);
+    // 계산 결과로 새로운 CompletableFuture를 반환
+    return CompletableFuture.completedFuture(results);
+  }
+```
+
+또한 `CompletableFuture`는 비동기의 결과를 처리하는 메소드를 제공합니다.<br>
+`allOf` 메소드로 비동기 작업들의 결과를 결합해 처리할 수 있습니다.
+```java
+  @Override
+  public void run(String... args) throws Exception {
+    // 3개의 비동기 작업을 처리중
+    CompletableFuture<User> page1 = gitHubLookupService.findUser("PivotalSoftware");
+    CompletableFuture<User> page2 = gitHubLookupService.findUser("CloudFoundry");
+    CompletableFuture<User> page3 = gitHubLookupService.findUser("Spring-Projects");
+
+    // 비동기 작업들이 모두 완료될 때까지 대기 -> allOf,  anyOf
+    CompletableFuture.allOf(page1,page2,page3).join();
+```
+`CompletableFuture`에서 예외처리는 체인을 통해 직관적으로 처리할 수 있습니다.<br>
+예를 들어 아래와 같은 형태가 될 수 있습니다.
+```java
+      // 비동기로 batch 작업을 수행할 경우
+      CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            // batch 작업의 트랜잭션을 설정
+            TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
+            try {
+                // 비동기 batch 작업을 진행..
+
+                // 모든 batch작업이 성공하면 커밋
+                transactionManager.commit(status); 
+            } catch (Exception e) {
+                // 실패하면 롤백
+                transactionManager.rollback(status); 
+                throw e;
+            }
+        }).exceptionally(ex ->{
+            // 실패했을 경우 실행할 작업
+            ex.printStackTrace();
+            return null;
+        }).thenAccept((result) -> {
+            // 성공했을 경우 실행할 작업
+        });
+```
+`CompletableFuture`에서는 블로킹되는 `join`을 사용하지 않고 논블로킹되는 아래의 메소드들로 처리가 가능합니다.<br>
+`thenAccept`는 비동기 작업의 결과를 소비하여 다음 작업을 진행합니다(void)<br>
+`thenApply`는 이전 작업의 결과를 받아 새로운 결과를 반환합니다.(return)<br>
+`thenRun`는 이전 작업의 결과와 상관없이 수행됩니다.<br>
+또한 `thenApplyAsync`, `thenAcceptAsync`등을 통해 후처리 작업을 새로운 비동기 스레드에서 진행할 수 있습니다.<br>
+
+마찬가지로 `CompletableFuture`도 만들어둔 스레드풀을 재사용하여 작업을 할 수 있습니다.<br>
 
 ```java
+// 빈으로 등록한 `TaskExecutor`를 비동기 작업에 재사용하는 경우
 @Autowired
 private TaskExecutor taskExecutor;
 
@@ -4789,169 +4851,137 @@ public CompletableFuture<String> asyncMethod() {
     }, taskExecutor);
 }
 ```
-
-
-
-## CompletableFuture
-
-```java
-  /**
-   * 비동기 프로그래밍의 결과를 모델링 + 결과 캡슐화 + 검색 기능 제공
-   * 비동기적으로 코드를 실행
-   * 비동기의 결과를 CompletableFuture객체에 넣어서 반환한다.
-   * @param user
-   * @return
-   * @throws InterruptedException
-   */
-  @Async
-  public CompletableFuture<User> findUser(String user) throws InterruptedException {
-    logger.info("Looking up " + user);
-    String url = String.format("https://api.github.com/users/%s", user);
-    User results = restTemplate.getForObject(url, User.class);
-    // Artificial delay of 1s for demonstration purposes
-    Thread.sleep(1000L);
-    return CompletableFuture.completedFuture(results);
-  }
-```
-
-` @Async` 를 이용한 메소드는 void로 실행할 수 있고 해당 메소드가 결과를 반환해야 한다면 `CompletableFuture`를 이용해서 반환합니다.
-
-또한 `CompletableFuture`는 비동기의 결과를 처리하는 메소드를 제공합니다.
-```java
-/**
-   * CompletableFuture <- 비동기 결과 반환 .. Promise와 유사
-   *
-   * 비동기가 완료되면 실행시킬 코드는 아래처럼 만든다. ( + thenApply, thenAccept, thenRun )
-   * future.thenApply(result -> result + " from CompletableFuture!");
-   *
-   * 비동기 작업은 join 메소드를 이용해서 기다린다. ( join은 멀티스레드에서 기본적으로 사용 )
-   *
-   * 예외가 발생하면 아래처럼 처리 ( + handle, exceptionally, whenComplete )
-   * future.exceptionally(ex -> "An error occurred: " + ex.getMessage());
-   *
-   * 비동기가 완료되면 실행시킬 -> complete, completeExceptionally
-   * 비동기 연속 실행 -> thenApplyAsync, thenAcceptAsync
-   * @param args incoming main method arguments
-   * @throws Exception
-   */
-  @Override
-  public void run(String... args) throws Exception {
-    // Start the clock
-    long start = System.currentTimeMillis();
-
-    // 서비스의 요청마다 새로운 비동기 스레드 생성
-    // Kick of multiple, asynchronous lookups
-    CompletableFuture<User> page1 = gitHubLookupService.findUser("PivotalSoftware");
-    CompletableFuture<User> page2 = gitHubLookupService.findUser("CloudFoundry");
-    CompletableFuture<User> page3 = gitHubLookupService.findUser("Spring-Projects");
-
-    // 비동기 작업들이 모두 완료될 때까지 대기 -> allOf,  anyOf
-    // Wait until they are all done
-    CompletableFuture.allOf(page1,page2,page3).join();
-
-    // Print results, including elapsed time
-    logger.info("Elapsed time: " + (System.currentTimeMillis() - start));
-    logger.info("--> " + page1.get());
-    logger.info("--> " + page2.get());
-    logger.info("--> " + page3.get());
-
-  }
-
-```
-`CompletableFuture`를 사용할때 `@Async`와 함께 사용하지 않고 별도로 사용할 수 있습니다.<br>
-`CompletableFuture`를 사용한다면 JVM이 처음 실행될 때 생성된 `ForkJoinPool`을 이용하여 비동기 작업을 진행합니다.<br>
-즉, 별도로 스레드풀을 만들지 않아도 됩니다. 물론 만들어 사용해도 됩니다.
-
-- CompletableFuture
-
-JAVA8의 표준 라이브러리에 포함되어 있는 기능으로 특별한 설정없이 곧바로 사용할 수 있습니다.<br>
-
-CompletableFuture를 사용하여 비동기 작업을 수행할 때, 매번 새로운 스레드 풀을 생성하지 않습니다. <br>
-대신, CompletableFuture는 기본적으로 `ForkJoinPool.commonPool()`을 사용하여 비동기 작업을 수행합니다.<br>
-이 공통 풀은 애플리케이션 전체에서 공유되며, JVM이 시작될 때 한 번 생성됩니다.<br>
-
-`CompletableFuture.runAsync(Runnable)` 또는 `CompletableFuture.supplyAsync(Supplier)`를 사용하면 내부적으로 `ForkJoinPool.commonPool()`를 사용하는데 이는 JVM이 관리하므로 직접적으로 `shutdown`할 필요는 없습니다.<br>
-
-그러므로 단순하고 가벼운 작업이라면 `ForkJoinPool`에게 메모리 관리를 맡겨도 무리가 없습니다.
+`CompletableFuture`의 결과를 반환할 경우에 따라서 두가지 방법을 사용할 수 있습니다.
 ```java
 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-    bldgMngService.getBldgDetail(bldgMngDTO);
+    // 여기서 수행되는 작업은 반환 값이 없음
+    System.out.println("비동기 작업 실행");
 });
-```
 
-여기서 비동기 작업의 완료된 후 다른 메소드를 호출 시 다른 스레드의 작업이 완료될 때까지 현재 스레드가 블로킹되는 `join`보다는 `thenAccept`,`thenApply`, `thenRun` 같은 방법을 이용합니다.
+```
 ```java
-CompletableFuture.runAsync(() -> {
-    // 비동기로 실행할 로직
-}).thenAccept(result -> {
-    // 비동기 작업 결과를 처리하는 로직
+CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+    // 여기서 수행되는 작업은 문자열을 반환함
+    return "비동기 작업 결과";
 });
 
 ```
-예외가 발생한다면 처리하는 방법입니다.
-```java
-CompletableFuture.supplyAsync(() -> {
-    // 여기에서 예외가 발생할 수 있음
-    return someMethod();
-})
-.exceptionally(ex -> {
-    // 예외 처리 로직
-    return defaultValue;
-})
-.thenAccept(result -> {
-    // 정상 실행 로직
-});
-```
 
 
-## CompletableFuture vs ExecutorService
-
-> CompletableFuture
-
-- 장점: <br>
-메서드 체인을 사용하여 비동기 작업의 결과를 처리하고, 예외를 처리하며, 후속 작업을 쉽게 연결할 수 있습니다.<br>
-리턴 값이 있는 작업을 쉽게 처리할 수 있습니다.<br>
-`thenApply`, `thenAccept`, `thenRun` 등의 다양한 후속 작업 메서드를 제공합니다.<br>
-`allOf`, `anyOf` 같은 여러 비동기 작업을 조합하는 메서드를 제공합니다.<br>
-- 단점:<br>
-러닝 커브가 있을 수 있습니다. 즉, 익숙해지기까지 시간이 걸릴 수 있습니다.<br>
-Java 8부터 사용할 수 있어서, 더 오래된 자바 버전에서는 사용할 수 없습니다.<br>
-
-> ExecutorService
-
-- 장점:<br>
-자바 5부터 사용 가능하므로, 오래된 자바 버전과 호환됩니다.<br>
-간단한 비동기 작업을 빠르게 시작할 수 있습니다.<br>
-직관적이고 사용하기 쉽습니다.<br>
-- 단점:<br>
-작업의 결과를 처리하거나, 예외를 처리하는 것이 `CompletableFuture`에 비해 복잡할 수 있습니다.<br>
-후속 작업을 연결하거나, 여러 비동기 작업을 조합하는 것이 더 복잡할 수 있습니다.<br>
-결론
-만약 여러 비동기 작업을 조합하거나, 결과를 처리하는 복잡한 로직이 필요하다면 `CompletableFuture`를 사용하는 것이 좋습니다.<br>
-단순한 비동기 작업을 빠르게 처리하고 싶다면 `ExecutorService`를 사용할 수 있습니다.<br>
-
-
-## ForkJoinPool
+### ForkJoinPool
 Java 7에서 도입된 특별한 종류의 스레드 풀로, 주로 병렬 계산 작업을 위해 설계되었습니다.<br>
-`ForkJoinPool`은 작업을 더 작은 부분으로 나누고, 이를 병렬로 처리한 후 결과를 합치는 fork/join 프레임워크를 구현합니다.<br>
+`ForkJoinPool`은 작업을 더 작은 부분으로 나누고, 이를 병렬로 처리한 후 결과를 합치는 `fork/join` 프레임워크를 구현합니다.<br>
 
 `CompletableFuture`와 같은 비동기 프로그래밍을 위한 클래스들은 내부적으로 `ForkJoinPool.commonPool()`을 사용하여 비동기 작업을 수행할 수 있습니다.<br>
 이 공통 풀은 애플리케이션 전체에서 공유되며, JVM이 시작될 때 한 번 생성됩니다.<br>
 따라서 별도로 스레드 풀을 생성하지 않아도 됩니다.<br>
 
-`CompletableFuture` 작업에 대해 별도의 스레드 풀을 사용하고 싶다면
+`CompletableFuture` 작업에 대해 별도의 스레드 풀을 사용하고 싶다면 `TaskExecutor`빈을 등록하거나 아래 방법을 이용합니다.
 ```java
 Executor myThreadPool = Executors.newFixedThreadPool(10);
 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
     // 비동기 작업
     return "Hello, World!";
 }, myThreadPool);
-
 ```
 
+## 비동기 작업 후처리
+- CompletionService
 
+`CompletionService`를 이용해서 작업의 결과를 큐에 저장하고 완료된 순서에 상관없이 후처리가 가능합니다.
+```java
+    ExecutorService executor = Executors.newFixedThreadPool(10);
+    CompletionService<String> completionService = new ExecutorCompletionService<>(executor);
 
+    // 비동기 작업 제출
+    for (int i = 0; i < 10; i++){
+        completionService.submit(()->{
+        // 비동기 작업 내용
+        return"결과";
+        });
+    }
 
+    // 결과 처리
+    for (int i = 0; i < 10; i++) {
+        try {
+            Future<String> result = completionService.take(); // 완료된 작업의 결과 기다림
+            System.out.println(result.get()); // 결과 처리
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    executor.shutdown();
+```
+- CountDownLatch
+
+`CountDownLatch`는 자바의 동시성 유틸리티로 다른 스레드의 작업을 기다릴 때 사용합니다.<br>
+
+```java
+public void someAsync() {
+
+        // CountDownLatch -다른 스레드의 작업을 기다림
+        CountDownLatch latch = new CountDownLatch(files.length);
+        // Atomic - 동시성 제어
+        AtomicBoolean allSuccess = new AtomicBoolean(true);
+
+        // JVM의 ForkJoinPool 사용
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            // batch 작업의 트랜잭션을 설정
+            TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
+            try {
+                for (int i = 0; i < files.length; i++) {
+                    // 파일의 길이만큼 비동기 작업을 진행
+                    } catch (IOException e) {
+                        throw new RuntimeException("실패");
+                    } finally {
+                        // 비동기 스레드의 카운트를 깍는다.
+                        latch.countDown();
+                    }
+                }
+                transactionManager.commit(status); // 모든 batch작업이 성공하면 커밋
+            } catch (Exception e) {
+                transactionManager.rollback(status); // 실패하면 롤백
+                throw e;
+            }
+        }).exceptionally(ex ->{
+            // 실패 후처리
+            return null;
+        }).thenAccept((result) -> {
+            try {
+                // 모든 스레드의 작업이 완료될 때까지 기다림
+                latch.await();
+                // 성공 후처리
+            } catch (Exception e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+    }
+```
+
+위 코드와 유사한 기능을 `CompletableFuture`의 메소드를 통해서 구현할 수 있습니다.
+```java
+List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+for (int i = 0; i < 10; i++) {
+    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+        // 비동기 작업 수행
+        System.out.println("작업 실행: " + Thread.currentThread().getName());
+    });
+    futures.add(future);
+}
+
+CompletableFuture<Void> allDone = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+try {
+    allDone.get(); // 모든 작업이 완료될 때까지 대기
+    System.out.println("모든 작업 완료");
+} catch (InterruptedException | ExecutionException e) {
+    e.printStackTrace();
+} finally {
+    executor.shutdown();
+}
+```
 
 ### 톰캣의 스레드풀
 이 스레드 풀은 HTTP 요청을 처리하기 위해 사용되며, 애플리케이션의 성능과 동시성을 관리하는데 중요한 역할을 합니다.<br>
@@ -4976,7 +5006,7 @@ public Callable<String> asyncMethod() {
 }
 ```
 MVC에서 `Callable`을 반환하는 메소드가 호출되면 즉시 비동기 스레드에서 작업이 진행되고 클라이언트에게는 응답을 합니다.<br>
-그리고 비동기 작업이 완료되는 즉시 
+그리고 비동기 작업이 완료되면 클라이언트에게 응답하게 됩니다.
 
 
 
@@ -5008,17 +5038,6 @@ public class MyService {
 }
 
 ```
-
-
-
-## 비동기 방법들의 차이
-`CompletableFuture`는 기본적으로 `ForkJoinPool.commonPool()`을 사용하여 비동기 작업을 수행합니다. <br>
-따라서 별도로 스레드 풀을 생성하지 않아도 됩니다.<br>
-필요에 따라 `Executor` 인터페이스를 구현하는 커스텀 스레드 풀을 제공하여 비동기 작업을 수행할 수 있습니다.(바로 위 코드)<br>
-
-`@Async`를 사용하려면 `@EnableAsync` 어노테이션을 통해 비동기 작업을 활성화해야 하며, `AsyncConfigurer` 인터페이스를 구현하여 커스텀 스레드 풀을 설정할 수 있습니다.
-스레드 풀을 별도로 설정하지 않으면, Spring은 기본적으로 `SimpleAsyncTaskExecutor`를 사용합니다. <br>
-이는 각 비동기 작업마다 새로운 스레드를 생성하는 방식으로 작동합니다.<br>
 
 </details>
 
