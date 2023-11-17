@@ -5011,33 +5011,7 @@ MVC에서 `Callable`을 반환하는 메소드가 호출되면 즉시 비동기 
 
 
 
-## 트랜잭션
 
-`@Tranjactional`이 걸린 메소드에서 `@Async`메소드나 비동기 작업을 호출한다면 각각의 스레드를 별도의 독립된 트랜잭션에서 실행됩니다.<br>
-트랜잭션은 하나의 스레드에서만 동작하므로 다른 스레드에서 발생한 오류로 호출한 스레드가 롤백되지 않습니다.<br>
-```java
-@Service
-public class MyService {
-
-    @Transactional
-    public void transactionalMethod() {
-        asyncMethod1();
-        asyncMethod2();
-        // ... 다른 로직
-    }
-
-    @Async
-    public void asyncMethod1() {
-        // 비동기로 실행될 로직
-    }
-
-    @Async
-    public void asyncMethod2() {
-        // 비동기로 실행될 로직
-    }
-}
-
-```
 
 </details>
 
@@ -5110,7 +5084,7 @@ public class YourRepository {
 
 이럴때 사용하면 좋은 대용량의 데이터를 조회하는 방법들을 소개합니다.
 
-- Mybatis + Cursor
+## Mybatis + Cursor
 Mybatis를 사용중이라면 간단히 몇가지 코드 수정으로 대용량의 데이터를 일정한 메모리만 사용함으로서 조회할 수 있습니다.
 ```java
 import org.apache.ibatis.cursor.Cursor;
@@ -5126,7 +5100,7 @@ public void getExcelData(DTO dto){
     }
 }
 ```
-기존의  `List<?>`타입을 `Cursor<?>` 타입으로 변경하고 메모리에 저장하지 않고 소모하면 됩니다.
+기존의  `List<?>`타입을 `Cursor<?>` 타입으로 변경하면 메모리에 저장하지 않고 소비만 하게 됩니다.
 
 `fetchSize` 와 함께 사용하면 더욱 빠르게 조회가 가능합니다.
 ```sql
@@ -5136,15 +5110,70 @@ public void getExcelData(DTO dto){
 ```
 </details>
 
+10만건 기준으로 6.8초
 
+## Query ScrollableResults
+Hibernate의 `ScrollableResults`를 이용하는 방법입니다.
+
+```java
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
+import org.hibernate.jpa.QueryHints;
+import org.hibernate.query.Query; 
+
+    Session session = entityManager.unwrap(Session.class); // 엔티티 매니저에서 Hibernate 세션 얻기
+
+    Query query = session.createNativeQuery(sql).setParameter(1, 42);
+    try (ScrollableResults scrollableResults = query.scroll(ScrollMode.FORWARD_ONLY)){
+        int cnt = 0;
+        while (scrollableResults.next()) {
+            cnt++;
+//                Object[] row = scrollableResults.get();
+//                System.out.println(Arrays.toString(row));
+            System.out.println("카운트 " + cnt);
+        }
+    }
+```
+10만건 기준 8.7초
+
+## JDBC + JPA Native Query
+
+JPA의 엔티티를 이용해서 jdbc의 배치 작업을 수행합니다.
+```java
+        // nativeQuery
+        var sql = "        SELECT *\n" +
+                  "        FROM TB_INF_MNGCARD_FOLDER\n" +
+                  "        WHERE TNO_MNGCARD_ID = " + id;
+
+        var em = entityManagerFactory.createEntityManager();
+        try {
+            em.getTransaction().begin();
+
+            var query = em 
+                    .createNativeQuery(sql) 
+                    .setHint(QueryHints.HINT_FETCH_SIZE, "1000");
+            AtomicInteger cnt = new AtomicInteger();
+            query.getResultStream().forEach(o -> {
+                    cnt.getAndIncrement();
+                    System.out.println("카운트 : " + cnt +" "+ o.getClass());
+            });
+
+//            em.getTransaction().commit();
+        } finally {
+            em.close();
+        }
+```
+10만건 기준 1.8초
 
 <details>
  <summary>커스텀 트랜잭션</summary>
 
+## 트랜잭션
 
+`@Tranjactional`이 걸린 메소드에서 `@Async`메소드나 비동기 작업을 호출한다면 해당 작업들은 각각의 스레드의 별도의 독립된 트랜잭션에서 실행됩니다.<br>
+트랜잭션은 하나의 스레드에서만 동작하므로 다른 스레드에서 발생한 오류로 호출한 스레드가 롤백되지 않습니다.<br>
 
-이걸 만든 이유는 하나의 트랜잭션으로 여러 비동기작업을 묶기위함입니다.<br>
-스레드에서 시작한 작업은 별도의 트랜잭션을 가지게 되지만 몇천만건의 데이터를 다루는 와중 다중 스레드로 작업을 맡기고 모든 스레드가 오류가 없다면 커밋을 하는게 어떨까라는 생각에서 출발했습니다.<br>
+여러 비동기 작업들을 하나의 트랜잭션으로 처리하기 위해서는 비동기 작업들의 예외를 캐치해서 관리하는 방법이 있습니다.
 
 ## PlatformTransactionManager
 `PlatformTransactionManager`는 스프링의 트랜잭션 관리를 위한 핵심 인터페이스입니다.<br>
