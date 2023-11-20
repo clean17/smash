@@ -5108,7 +5108,6 @@ public void getExcelData(DTO dto){
     조회 쿼리
 </select>
 ```
-</details>
 
 10만건 기준으로 6.8초
 
@@ -5165,6 +5164,60 @@ JPA의 엔티티를 이용해서 jdbc의 배치 작업을 수행합니다.
 ```
 10만건 기준 1.8초
 
+
+
+
+## Spring Batch
+그러다가 스프링 배치를 통해서도 위와 유사한 기능을 구현할 수 있다고 해서 메모합니다.(추후 알아볼 것)
+```java
+@Configuration
+@EnableBatchProcessing
+public class BatchConfig {
+
+    @Autowired
+    private JobBuilderFactory jobs;
+
+    @Autowired
+    private StepBuilderFactory steps;
+
+    @Bean
+    public Job job(Step step) {
+        return jobs.get("myJob")
+                .start(step)
+                .build();
+    }
+
+    @Bean
+    public Step step(ItemReader<MyInput> reader,
+                     ItemProcessor<MyInput, MyOutput> processor,
+                     ItemWriter<MyOutput> writer) {
+        return steps.get("myStep")
+                .<MyInput, MyOutput>chunk(10)
+                .reader(reader)
+                .processor(processor)
+                .writer(writer)
+                .faultTolerant() // 예외 처리를 위한 설정
+                .skipPolicy(new AlwaysSkipItemSkipPolicy()) // 어떤 예외든지 스킵하도록 정책 설정
+                .build();
+    }
+
+    // Define reader, processor, and writer beans...
+}
+
+```
+
+위의 설정은 스프링 배치 Job을 구성합니다. <br>
+스프링 배치는 `JobRepository`를 사용하여 각 `chunk`의 트랜잭션을 관리합니다.<br>
+`JobRepository`는 배치 작업의 메타데이터를 저장하고, 각 `chunk`의 커밋과 롤백을 처리합니다.
+
+`chunk` 메소드는 한 번에 처리할 항목의 수를 정의합니다.<br>
+`reader`는 데이터를 읽고, `processor`는 데이터를 처리하며, `writer`는 모든 처리가 완료된 후 데이터를 쓰는 역할을 합다.<br>
+
+모든 작업이 성공적으로 완료되면 `writer`가 최종 커밋을 수행합니다. <br>
+성공했을 때 커밋하는 것은 스프링 배치의 기본 동작입니다.<br>
+만약 중간에 실패가 발생하면, 해당 청크는 롤백되고 재시도 또는 스킵 로직이 적용될 수 있습니다.
+
+</details>
 <details>
  <summary>커스텀 트랜잭션</summary>
 
@@ -5340,57 +5393,96 @@ public class TransactionalAsyncService {
 
 모든 작업이 완료된 후에 `future.get()`을 호출하여 각 작업의 결과를 확인하고, 예외가 발생하면 롤백을 수행합니다.<br>
 그러나 이는 실제로 전체 트랜잭션을 롤백하는 것이 아니라 각 작업에 대해 롤백을 수행하는 것입니다<br>
+</details>
 
+<details>
+  <summary> ENUM 생성</summary>
 
-## Spring Batch
-그러다가 스프링 배치를 통해서도 위와 유사한 기능을 구현할 수 있다고 해서 메모합니다.(추후 알아볼 것)
+## ENUM
+
+기본적인  생성 방법
 ```java
-@Configuration
-@EnableBatchProcessing
-public class BatchConfig {
-
-    @Autowired
-    private JobBuilderFactory jobs;
-
-    @Autowired
-    private StepBuilderFactory steps;
-
-    @Bean
-    public Job job(Step step) {
-        return jobs.get("myJob")
-                .start(step)
-                .build();
-    }
-
-    @Bean
-    public Step step(ItemReader<MyInput> reader,
-                     ItemProcessor<MyInput, MyOutput> processor,
-                     ItemWriter<MyOutput> writer) {
-        return steps.get("myStep")
-                .<MyInput, MyOutput>chunk(10)
-                .reader(reader)
-                .processor(processor)
-                .writer(writer)
-                .faultTolerant() // 예외 처리를 위한 설정
-                .skipPolicy(new AlwaysSkipItemSkipPolicy()) // 어떤 예외든지 스킵하도록 정책 설정
-                .build();
-    }
-
-    // Define reader, processor, and writer beans...
+public enum Day {
+    MONDAY,
+    TUESDAY,
+    WEDNESDAY,
+    THURSDAY,
+    FRIDAY,
+    SATURDAY,
+    SUNDAY
 }
-
 ```
 
-위의 설정은 스프링 배치 Job을 구성합니다. <br>
-스프링 배치는 `JobRepository`를 사용하여 각 `chunk`의 트랜잭션을 관리합니다.<br>
-`JobRepository`는 배치 작업의 메타데이터를 저장하고, 각 `chunk`의 커밋과 롤백을 처리합니다.
+보통은 확장된 ENUM을 사용합니다.
 
-`chunk` 메소드는 한 번에 처리할 항목의 수를 정의합니다.<br>
-`reader`는 데이터를 읽고, `processor`는 데이터를 처리하며, `writer`는 모든 처리가 완료된 후 데이터를 쓰는 역할을 합다.<br>
+```java
+public enum Day {
+    MONDAY("월요일"),
+    TUESDAY("화요일"),
+    WEDNESDAY("수요일"),
+    THURSDAY("목요일"),
+    FRIDAY("금요일"),
+    SATURDAY("토요일"),
+    SUNDAY("일요일");
 
-모든 작업이 성공적으로 완료되면 `writer`가 최종 커밋을 수행합니다. <br>
-성공했을 때 커밋하는 것은 스프링 배치의 기본 동작입니다.<br>
-만약 중간에 실패가 발생하면, 해당 청크는 롤백되고 재시도 또는 스킵 로직이 적용될 수 있습니다.
+    private final String koreanName;
 
+    Day(String koreanName) {
+        this.koreanName = koreanName;
+    }
+
+    public String getKoreanName() {
+        return koreanName;
+    }
+}
+```
+만들어진 ENUM은 아래와 같이 사용합니다.
+```java
+public static void main(String[] args) {
+    Day day = Day.MONDAY;
+
+    System.out.println(day); // MONDAY
+    System.out.println(day.getKoreanName()); // 월요일
+
+    // enum의 모든 값을 순회
+    for (Day d : Day.values()) {
+        System.out.println(d + ": " + d.getKoreanName());
+    }
+}
+```
+
+여기서 fianl필드를 사용하고 있습니다.
+final필드를 이용하면 아래의 장점들이 있습니다.
+- 불변하게 만들어서 상수의 안정성을 도모
+- 스레드 안전을 보장
+- 컴파일러가 최적화를 함
+
+
+
+```java
+public enum Param {
+    CONTENT("content", true),
+    PAGEABLE("pageable", true),
+    SEARCH_PARAM("searchParam", true),
+    MESSAGE("message", true),
+    SUCCESS_FLAG("SUCCESS", true),
+    FAIL_FLAG("FAIL", false),
+    FILE_NAME("fileName", true),
+    HEADERS("headers", true),
+    CELLS("cells", true),
+    ROWS("rows", true),
+    WORKBOOK("workbook", true);
+
+    @Getter
+    private final String value;
+    @Getter
+    private final boolean bool;
+
+    Param(String value, Boolean bool) {
+        this.value = value;
+        this.bool = bool;
+    }
+}
+```
 
 </details>
