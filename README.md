@@ -5486,3 +5486,90 @@ public enum Param {
 ```
 
 </details>
+
+<details>
+  <summary> Stream / forEach 차이</summary>
+
+# stream과 forEach의 차이
+
+## 처리방식의 차이
+
+stream은 함수형 프로그래밍의 접근방식을 이용합니다.<br>
+데이터를 변환하고 필터링 및 연산을 수행할 때 사이드 이펙트가 없습니다.<br>
+stream은 새로운 스트림을 반환하거나 결과를 생성하여 반환하게 됩니다.<br>
+이러한 선언적인 방식은 무엇을 할것인지에 초점이 맞춰있습니다.<br>
+
+forEach는 명령형 프로그래밍의 접근방식을 이용합니다.<br>
+개발자가 어떻게 데이터를 처리할지에 초점이 맞춰있습니다.<br>
+forEach는 사이드 이팩트를 발생시킬 수 있고 외부 컬렉션을 조작할 수 있습니다.<br>
+함수형 프로그래밍의 원칙을 따르는 stream은 사이드 이펙트를 없애기 위해서 외부 컬렉션에 접근할 수 없습니다.<br>
+하지만 방법은 있습니다 `stream.forEach`를 이용하면 외부 컬렉션에 접근할 수 있습니다.<br>
+```java
+List<Integer> externalList = new ArrayList<>();
+stream.forEach(item -> externalList.add(item)); // 외부 컬렉션에 접근 및 수정
+```
+위 방법은 가능하지만 만약 `.parallelStream()`을 통해 병렬 처리를 할 경우 동시성의 문제가 발생할 수 있습니다.<br>
+사이드 이펙트를 줄이기 위해서 순수함수로 stream을 이용하는것을 권장합니다.<br>
+
+## 병렬처리의 차이
+stream은 `.parallelStream()`을 통해서 병렬처리가 가능합니다.<br>
+반면에 forEach는 병렬처리를 위해 스레드가 필요합니다.<br>
+
+## filter
+
+filter는 주어진 입력값이 해당조건에 만족하는지에 따라 결과에 포함할지 말지 결정합니다.<br>
+filter스트림 내부에서 `true`가 반환된다면 해당 `item`은 결과에 포함되고 `false`가 반환된다면 포함되지 않습니다.<br>
+새로운 스트림을 반환합니다.<br>
+```java
+List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6);
+List<Integer> evenNumbers = numbers.stream()
+                                   .filter(n -> n % 2 == 0)
+                                   .collect(Collectors.toList());
+                                   // 2, 4, 6 
+```
+## map
+들어온 데이터를 연산처리 후 새로운 스트림을 반환합니다.<br>
+```java
+stream.map(x -> x * 2)
+```
+
+## collect
+반환된 스트림을 컬렉션으로 반환합니다.<br>
+```java
+List<T> list = stream.collect(Collectors.toList())
+```
+
+
+## findAny
+
+`findAny`는 임의의 값을 반환합니다.<br>
+이 메소드는 `Optional`을 반환하는데 `orElse(null)`과 함께 사용하여 결과가 없다면 `null`을 반환할 수 있습니다.<br>
+```java
+Optional<MyObject> result = myStream.findAny();
+MyObject obj = result.orElse(null);
+```
+
+## anyMatch
+조건에 맞는 데이터가 하나라도 있으면 `true`를 반환합니다.<br>
+```java
+boolean hasEven = list.stream().anyMatch(x -> x % 2 == 0);
+```
+마찬가지로 `allMatch`는 모든 결과가 `true`면 `true`를 반환하고 `noneMatch`는 모든 결과가 `false`면 `true`를 반환합니다.<br>
+
+## flatMap
+
+말그래도 flat하게 만듭니다.<br>
+예를들어 중첩된 컬렉션이 있을경우 해당 스트림을 풀어서 각각의 스트림으로 만들고 이 스트림을 하나로 합치게 됩니다.<br>
+```java
+List<List<Integer>> nestedLists = Arrays.asList(
+    Arrays.asList(1, 2, 3),
+    Arrays.asList(4, 5, 6),
+    Arrays.asList(7, 8, 9)
+);
+
+List<Integer> flatList = nestedLists.stream()
+    .flatMap(List::stream)
+    .collect(Collectors.toList());
+    // 1, 2, 3, 4, 5, 6, 7, 8, 9
+```
+</details>
