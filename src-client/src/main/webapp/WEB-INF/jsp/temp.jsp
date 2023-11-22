@@ -8,7 +8,10 @@
     <title>Document</title>
 </head>
 <body>
-    테스트
+    비디오 테스트
+    <div id="video">
+
+    </div>
 </body>
 <script>
     /**
@@ -30,5 +33,31 @@
     };
     const date = new Date();
     console.log(date.format('yyyy.mm.dd')); // 2023.04.01
+
+    function initPage() {
+
+        fetch('/video/stream2', {
+            method: 'GET',
+        }).then(res => res.json())
+            .then(res => {
+                const videoBox = document.querySelector('#video');
+                const videoElement = document.createElement('video');
+
+                videoElement.setAttribute('width', '100%');
+                videoElement.setAttribute('height', '100%');
+                videoElement.setAttribute('controls', '');
+                videoElement.setAttribute('autoplay', '');
+
+                const videoSource = document.createElement('source');
+                videoSource.setAttribute('src', res.url);
+                videoSource.setAttribute('type', 'video/mp4');
+
+                videoElement.appendChild(videoSource);
+                videoBox.appendChild(videoElement);
+            });
+
+    }
+
+    document.addEventListener("DOMContentLoaded", initPage);
 </script>
 </html>
