@@ -25,8 +25,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 128KB # 최대 크기 제한
-      max-request-size: 128KB # formData 요청 크기 제한
+      max-file-size: 5GB # 최대 크기 제한 ( 둘다 기본값 128KB )
+      max-request-size: 5GB # formData 요청 크기 제한
 
   redis:
     host: localhost

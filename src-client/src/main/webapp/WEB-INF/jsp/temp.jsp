@@ -9,9 +9,10 @@
 </head>
 <body>
     비디오 테스트
-    <div id="video">
+    <div id="myVideo">
 
     </div>
+    <button onclick="fncPlay()" style="width: 100px; height: 40px" >플레이</button>
 </body>
 <script>
     /**
@@ -34,27 +35,37 @@
     const date = new Date();
     console.log(date.format('yyyy.mm.dd')); // 2023.04.01
 
-    function initPage() {
+    function fncPlay() {
+        const videoBox = document.querySelector('#myVideo');
 
-        fetch('/video/stream2', {
-            method: 'GET',
-        }).then(res => res.json())
-            .then(res => {
-                const videoBox = document.querySelector('#video');
+        // blob 구현
+        fetch('/video/resion')
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('Network response was not ok.');
+            })
+            .then(blob => {
+                console.log('blob 성공')
+                const videoUrl = URL.createObjectURL(blob);
                 const videoElement = document.createElement('video');
 
-                videoElement.setAttribute('width', '100%');
-                videoElement.setAttribute('height', '100%');
-                videoElement.setAttribute('controls', '');
-                videoElement.setAttribute('autoplay', '');
+                videoElement.src = videoUrl;
+                videoElement.style.width = '100%'
+                videoElement.style.height = '100%'
 
-                const videoSource = document.createElement('source');
-                videoSource.setAttribute('src', res.url);
-                videoSource.setAttribute('type', 'video/mp4');
+                videoElement.controls = true;
+                videoElement.autoplay = true;
 
-                videoElement.appendChild(videoSource);
                 videoBox.appendChild(videoElement);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
             });
+    }
+
+    function initPage() {
 
     }
 
