@@ -5573,3 +5573,29 @@ List<Integer> flatList = nestedLists.stream()
     // 1, 2, 3, 4, 5, 6, 7, 8, 9
 ```
 </details>
+
+<details>
+ <summary>Jmeter</summary>
+
+## JMETER
+
+제이미터는 웹 애플리케이션 테스팅에 사용되는 오픈 소스 소프트웨어입니다.
+
+아파치 재단에서 jmeter를 다운 받아 설치한 뒤에 스크립트를 작성하고 적당한 스레드와 반복횟수를 넣어 부하를 테스트합니다.
+
+- 로그인 로직 jmeter 테스트
+
+서버에서 로그인 페이지에 접속할 때마다 새로운 RSA키를 반환할때 RSA키를 이용해 암호화된 계정정보로 로그인을 성공하는 방법은?
+
+1. JSR223 Sampler에서 Java 코드로 해당 암호화 로직을 재현
+2. Nashorn 엔진 or Rhino으로 JavaScript 코드 실행, JSR223 Sampler에서 해당 엔진 사용 가능
+3. Selenium WebDriver를 이용해서 로그인 프로세스 자동화
+
+Selenium을 통해서 로그인을 구현해보자 !
+
+
+
+
+
+
+</details>
