@@ -126,6 +126,10 @@ dependencies {
     implementation 'org.apache.poi:poi:5.2.3'
     implementation 'org.apache.poi:poi-ooxml:5.2.3'
 
+    implementation 'org.apache.commons:commons-compress:1.21'
+    // Zip4j
+    implementation 'net.lingala.zip4j:zip4j:2.11.5'
+
     /************************************ View *******************************************************/
 
 /*    // Vaadin // 24.1.10 버전은 자바11과 호환되지 않음 - 사용하려니 전체 웹팩을 다운받음
