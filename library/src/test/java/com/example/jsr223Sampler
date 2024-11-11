@@ -1,0 +1,18 @@
+// HTTP Request Sampler의 응답 데이터 가져오기
+String response = prev.getResponseDataAsString()
+
+// 정규 표현식을 사용하여 UUIDKey의 value 값을 추출
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
+// 정규 표현식: name="UUIDKey"인 input 태그의 value 속성 추출
+Pattern pattern = Pattern.compile('<input\\s+[^>]*name="/archives/regArchivesDoc/viewFolderReg"[^>]*value="([^"]+)"')
+Matcher matcher = pattern.matcher(response)
+
+if (matcher.find()) {
+    String uuidValue = matcher.group(1)  // 추출된 value 값
+    vars.put("/archives/regArchivesDoc/viewFolderReg", uuidValue)  // JMeter 변수에 저장
+    log.info(" ********************* UUID Value ******************* : " + vars.get("/archives/regArchivesDoc/viewFolderReg"));
+} else {
+    log.warn("%%%%%%%%%%%% UUID Key not found in the response")
+}
